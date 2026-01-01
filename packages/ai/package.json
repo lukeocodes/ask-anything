@@ -1,0 +1,22 @@
+{
+  "name": "@ask/ai",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.46",
+    "@ai-sdk/google-vertex": "^5.0.74",
+    "@ai-sdk/openai-compatible": "^3.0.41",
+    "@ask/config": "workspace:*",
+    "ai": "^7.0.87",
+    "google-auth-library": "^11.0.2",
+    "voyage-ai-provider": "^5.0.0"
+  }
+}

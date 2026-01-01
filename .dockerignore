@@ -1,0 +1,24 @@
+# Never bake secrets or local state into the image.
+.env
+.env.*
+!.env.example
+
+node_modules
+**/node_modules
+dist
+**/dist
+*.tsbuildinfo
+.turbo
+coverage
+
+.git
+.github
+.claude
+.opencode
+.overseer
+.agents
+
+# Docs / scratch not needed at runtime.
+eval
+*.md
+.DS_Store

@@ -1,0 +1,24 @@
+{
+  "name": "@ask/sources",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ask/config": "workspace:*",
+    "@ask/core": "workspace:*",
+    "@ask/db": "workspace:*",
+    "picomatch": "4.0.7",
+    "turndown": "7.2.4"
+  },
+  "devDependencies": {
+    "@types/picomatch": "4.0.3",
+    "@types/turndown": "5.0.6"
+  }
+}

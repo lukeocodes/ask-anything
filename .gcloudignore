@@ -1,0 +1,17 @@
+# Keep secrets and local cruft out of the Cloud Build upload.
+.git
+.env
+.env.*
+!.env.example
+node_modules
+**/node_modules
+dist
+**/dist
+*.tsbuildinfo
+.turbo
+coverage
+.claude
+.opencode
+.overseer
+.agents
+.DS_Store

@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.turbo/
+coverage/
+
+# env
+.env
+.env.*
+!.env.example
+
+# coding-agent scratch directories
+/.claude/
+/.opencode/
+/.overseer/
+/.agents/
+
+# os
+.DS_Store

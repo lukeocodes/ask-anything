@@ -1,0 +1,21 @@
+{
+  "name": "@ask/mcp-stdio",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ask-mcp": "src/index.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ask/mcp": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@ask/cli",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ask": "./bin/ask.js"
+  },
+  "exports": {
+    ".": "./src/commands/registry.ts",
+    "./api": "./src/api.ts"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  }
+}

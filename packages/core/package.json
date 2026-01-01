@@ -1,0 +1,21 @@
+{
+  "name": "@ask/core",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ask/ai": "workspace:*",
+    "@ask/config": "workspace:*",
+    "@ask/db": "workspace:*",
+    "ai": "^7.0.87",
+    "zod": "^3.25.76",
+    "cron-parser": "5.10.1"
+  }
+}

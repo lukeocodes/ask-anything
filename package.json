@@ -1,0 +1,32 @@
+{
+  "name": "ask-anything",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "AI knowledge & retrieval API with a management CLI and MCP servers.",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "db:generate": "pnpm --filter @ask/db db:generate",
+    "db:migrate": "pnpm --filter @ask/db db:migrate",
+    "db:push": "pnpm --filter @ask/db db:push",
+    "api": "pnpm --filter @ask/api dev",
+    "cli": "pnpm --filter @ask/cli start --",
+    "mgmt-mcp": "pnpm --filter @ask/mgmt-mcp start",
+    "start": "pnpm --filter @ask/api start",
+    "eval": "tsx eval/run.ts",
+    "warm-cache": "tsx scripts/warm-cache.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "5.0.1"
+  }
+}

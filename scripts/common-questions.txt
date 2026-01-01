@@ -1,0 +1,7 @@
+# Questions to pre-warm the answer cache. One per line; blank lines and
+# #-comments are ignored. The cache is semantic, so canonical phrasings also
+# catch paraphrases. Replace these with the questions your users actually ask.
+What is this project and what does it do?
+How do I install and run it locally?
+How do I configure authentication?
+Where is the API reference?

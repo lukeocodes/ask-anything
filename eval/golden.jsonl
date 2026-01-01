@@ -1,0 +1,3 @@
+{"question": "What is this project and what does it do?", "expect": {"abstain": false}}
+{"question": "How do I install and run it locally?", "expect": {"abstain": false}}
+{"question": "What is the capital of France?", "expect": {"abstain": true}}

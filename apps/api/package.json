@@ -1,0 +1,31 @@
+{
+  "name": "@ask/api",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/start.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ask/ai": "workspace:*",
+    "@ask/config": "workspace:*",
+    "@ask/core": "workspace:*",
+    "@ask/db": "workspace:*",
+    "@ask/mcp": "workspace:*",
+    "@ask/sources": "workspace:*",
+    "@fastify/rate-limit": "^10.2.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "fastify": "^5.2.0",
+    "node-cron": "^3.0.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node-cron": "^3.0.11"
+  }
+}
