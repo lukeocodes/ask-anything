@@ -3,7 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "description": "AI knowledge & retrieval API with a management CLI and MCP servers.",
+  "description": "A retrieval engine that refuses to guess. Grounded, cited answers over MCP and REST from registered git repos and URLs.",
+  "keywords": [
+    "retrieval",
+    "rag",
+    "search",
+    "knowledge-base",
+    "mcp",
+    "mcp-server",
+    "pgvector",
+    "postgres",
+    "semantic-search",
+    "hybrid-search",
+    "reranking",
+    "citations",
+    "cli",
+    "rest-api",
+    "self-hosted"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukeocodes/ask-anything.git"
+  },
+  "homepage": "https://github.com/lukeocodes/ask-anything#readme",
+  "bugs": {
+    "url": "https://github.com/lukeocodes/ask-anything/issues"
+  },
+  "author": "Luke Oliff <luke@lukeoliff.com> (https://github.com/lukeocodes)",
   "packageManager": "pnpm@10.33.4",
   "engines": {
     "node": ">=22"
