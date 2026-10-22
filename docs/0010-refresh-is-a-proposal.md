@@ -68,19 +68,20 @@ watches the thing and proposes.
 
 ## Known gaps
 
-Partially built. The store and the decision side are done; the way in is
-not, and the earlier adapter-side shape is still in the code.
+Built, with the earlier adapter-side shape still in the code.
 
 - Built: `proposeUpdate` (one pending per record), `listPendingProposals`,
   `approveProposal` via `applyRevision`, `rejectProposal`
-  (`packages/core/src/proposals.ts`); `GET /v1/proposals`,
+  (`packages/core/src/proposals.ts`); `POST /v1/knowledge/:id/proposals`
+  recording the key label as `proposedBy`
+  (`apps/api/src/routes/knowledge.ts`); `GET /v1/proposals`,
   `POST /v1/proposals/:id/approve|reject` recording the key label as
   `decidedBy` (`apps/api/src/routes/admin.ts`); `ask proposals
-  list|approve|reject` and their management MCP tools; the
-  `update_proposals` table.
-- Missing: `POST /v1/knowledge/:id/proposals`, `ask proposals create <id>`,
-  and a `proposed_by` column. `proposeUpdate` is reachable only from the
-  verify tick, which no shipped adapter feeds.
+  create|list|approve|reject` and their management MCP tools; the
+  `update_proposals` table with `proposed_by`.
+- One pending per record is a select then an insert in `proposeUpdate`
+  (`packages/core/src/proposals.ts`), not a constraint. Two requests for
+  the same record at the same moment can both insert.
 - To remove: `trust` and `verify` on `SourceAdapter`
   (`packages/core/src/source-adapter.ts`), the verify tick
   (`apps/api/src/jobs/monitor.ts`, `MONITOR_CRON`,
