@@ -228,7 +228,7 @@ export const commands: readonly Command[] = [
 
   define({
     name: "proposals list",
-    description: "Pending knowledge-update proposals from review-trust sources (GET /v1/proposals).",
+    description: "Pending knowledge-update proposals awaiting approval (GET /v1/proposals).",
     args: z.object({}),
     example: {},
     run: (_a, ctx) => client(ctx).get("/v1/proposals"),
