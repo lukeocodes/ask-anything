@@ -94,9 +94,17 @@ export function proposalsList(data: unknown): string {
     .map((p) => {
       const kind = str(rec(p.diff).kind ?? p.kind ?? p.status);
       const target = str(p.itemTitle ?? p.title ?? p.itemId ?? p.knowledgeItemId);
-      return `${str(p.id)}  ${kind}  ${target}`.trim();
+      const by = p.proposedBy ? `  by ${str(p.proposedBy)}` : "";
+      return `${str(p.id)}  ${kind}  ${target}${by}`.trim();
     })
     .join("\n");
+}
+
+export function proposalCreate(data: unknown): string {
+  const d = rec(data);
+  const p = rec(d.proposal);
+  const head = d.created === false ? "Already pending" : "Proposed";
+  return `${head}: ${str(p.id)} for item ${str(p.itemId)}`;
 }
 
 export function questionsTop(data: unknown): string {
@@ -132,6 +140,7 @@ export const renderers = {
   knowledgeAdd,
   knowledgeReviews,
   knowledgeGaps,
+  proposalCreate,
   proposalsList,
   questionsTop,
 };

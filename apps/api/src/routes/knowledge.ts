@@ -6,6 +6,7 @@ import {
   isSourceOwned,
   listKnowledgeGaps,
   listVisibilityReviews,
+  proposeUpdate,
   recordUsage,
   refreshItem,
   setVisibility,
@@ -27,6 +28,21 @@ const IngestBody = z.object({
   decayRate: z.number().min(0).optional(),
   visibility: z.enum(["public", "private"]).optional(),
 });
+
+// The candidate shape from ADR-0010. A proposal with nothing to change is
+// refused; `diff` and `evidence` are the proposer's notes and may be empty.
+const ProposalBody = z
+  .object({
+    proposedTitle: z.string().min(1).optional(),
+    proposedSummary: z.string().min(1).optional(),
+    proposedBody: z.string().min(1).optional(),
+    diff: z.record(z.unknown()).default({}),
+    evidence: z.array(z.object({ url: z.string().optional(), note: z.string().optional() })).default([]),
+  })
+  .refine(
+    (b) => b.proposedTitle !== undefined || b.proposedSummary !== undefined || b.proposedBody !== undefined,
+    { message: "one of proposedTitle, proposedSummary, proposedBody is required" },
+  );
 
 export async function knowledgeRoutes(app: FastifyInstance): Promise<void> {
   // Insert knowledge into the database (the primary write path).
@@ -138,6 +154,31 @@ export async function knowledgeRoutes(app: FastifyInstance): Promise<void> {
         }
         throw err;
       }
+    },
+  );
+
+  // Propose a change to a record (ADR-0010). Any write-scope key may; the
+  // record is untouched until an operator approves (POST /v1/proposals/:id/
+  // approve). One pending proposal per record: while one is pending, the
+  // existing one comes back with 200 instead of a new one with 201.
+  app.post(
+    "/v1/knowledge/:id/proposals",
+    { preHandler: requireScope("write") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const parsed = ProposalBody.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "invalid_request", issues: parsed.error.issues });
+      }
+      const item = await getItem(id);
+      if (!item || !visibleTo(req, item)) return reply.code(404).send({ error: "not_found" });
+      const { proposal, created } = await proposeUpdate(
+        id,
+        item.sourceType,
+        parsed.data,
+        req.apiKey?.label ?? "api",
+      );
+      return reply.code(created ? 201 : 200).send({ proposal, created });
     },
   );
 

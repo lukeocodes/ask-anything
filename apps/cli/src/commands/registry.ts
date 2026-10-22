@@ -236,6 +236,47 @@ export const commands: readonly Command[] = [
   }),
 
   define({
+    name: "proposals create",
+    description:
+      "Propose a change to a knowledge item for an operator to approve (POST /v1/knowledge/:id/proposals). Needs at least one of --title, --summary, --body or --file. Returns the already-pending proposal if the item has one.",
+    args: z.object({
+      id: z.string().min(1).describe("Knowledge item id."),
+      title: z.string().optional().describe("Proposed title."),
+      summary: z.string().optional().describe("Proposed summary."),
+      body: z.string().optional().describe("Proposed body text."),
+      file: z.string().optional().describe("Read the proposed body from this file instead of --body."),
+      diff: z.record(z.unknown()).optional().describe("Machine-readable diff (JSON object on the CLI)."),
+      evidence: z.array(z.string()).optional().describe("URLs backing the change (comma-separated on the CLI)."),
+      note: z.string().optional().describe("Why the change is right, in words."),
+    }),
+    positionals: ["id"],
+    example: {
+      id: "00000000-0000-0000-0000-000000000000",
+      body: "The rate limit is now 200 rps.",
+      evidence: ["https://example.com/changelog"],
+      note: "Raised in the March release.",
+    },
+    async run(a, ctx) {
+      if (a.body !== undefined && a.file !== undefined) {
+        throw new Error("proposals create takes --body or --file, not both");
+      }
+      const body = a.file !== undefined ? await readFile(a.file, "utf8") : a.body;
+      const evidence = [
+        ...(a.evidence ?? []).map((url) => ({ url })),
+        ...(a.note !== undefined ? [{ note: a.note }] : []),
+      ];
+      return client(ctx).post(`/v1/knowledge/${encodeURIComponent(a.id)}/proposals`, {
+        proposedTitle: a.title,
+        proposedSummary: a.summary,
+        proposedBody: body,
+        diff: a.diff,
+        evidence,
+      });
+    },
+    render: renderers.proposalCreate,
+  }),
+
+  define({
     name: "proposals approve",
     description: "Approve a proposal (POST /v1/proposals/:id/approve).",
     args: z.object({ id: z.string().min(1) }),

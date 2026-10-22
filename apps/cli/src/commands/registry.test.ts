@@ -44,6 +44,7 @@ describe("command registry", () => {
         "knowledge reviews",
         "knowledge visibility",
         "proposals approve",
+        "proposals create",
         "proposals list",
         "proposals reject",
         "questions top",

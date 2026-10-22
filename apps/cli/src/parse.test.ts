@@ -38,6 +38,28 @@ describe("parseCommandArgs", () => {
     ).toEqual({ body: "x", tags: ["a", "b"], metadata: { k: 1 } });
   });
 
+  it("parses the proposals create flags", () => {
+    expect(
+      parseCommandArgs(cmd("proposals create"), [
+        "i1",
+        "--body",
+        "new text",
+        "--evidence",
+        "https://a,https://b",
+        "--note",
+        "changed upstream",
+        "--diff",
+        '{"kind":"manual"}',
+      ]),
+    ).toEqual({
+      id: "i1",
+      body: "new text",
+      evidence: ["https://a", "https://b"],
+      note: "changed upstream",
+      diff: { kind: "manual" },
+    });
+  });
+
   it("validates enums and rejects unknown flags", () => {
     expect(() => parseCommandArgs(cmd("jobs run"), ["nope"])).toThrow(/<job>/);
     expect(() => parseCommandArgs(cmd("jobs run"), ["verify", "--source", "x"])).toThrow(/unknown flag --source/);

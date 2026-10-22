@@ -18,17 +18,25 @@ export interface ProposalCandidate {
   evidence: { url?: string; note?: string }[];
 }
 
+export interface ProposeResult {
+  proposal: UpdateProposal;
+  /** False when a pending proposal for the item already existed and was returned instead. */
+  created: boolean;
+}
+
 /**
- * Create a pending update proposal for an existing item. Produced by a
- * review-trust adapter's verify pass; listed for an operator to approve before
- * it ever touches the knowledgebase.
+ * Create a pending update proposal for an existing item (ADR-0010). Nothing
+ * touches the item; the proposal waits for `approveProposal` / `rejectProposal`.
+ * One pending proposal per item: a second call while one is pending returns
+ * the existing one with `created: false`. `proposedBy` is the label of the
+ * API key that sent it; the engine's own verify tick passes none.
  */
 export async function proposeUpdate(
   itemId: string,
   sourceType: string,
   candidate: ProposalCandidate,
-): Promise<UpdateProposal> {
-  // Avoid stacking duplicate pending proposals for the same item.
+  proposedBy?: string,
+): Promise<ProposeResult> {
   const [existing] = await db()
     .select()
     .from(updateProposals)
@@ -39,13 +47,14 @@ export async function proposeUpdate(
       ),
     )
     .limit(1);
-  if (existing) return existing;
+  if (existing) return { proposal: existing, created: false };
 
   const [proposal] = await db()
     .insert(updateProposals)
     .values({
       itemId,
       sourceType,
+      proposedBy,
       proposedTitle: candidate.proposedTitle,
       proposedSummary: candidate.proposedSummary,
       proposedBody: candidate.proposedBody,
@@ -56,8 +65,12 @@ export async function proposeUpdate(
     .returning();
   if (!proposal) throw new Error("proposeUpdate: insert returned no row");
 
-  await recordUsage({ kind: "watch", metadata: { proposalId: proposal.id, itemId, sourceType } });
-  return proposal;
+  await recordUsage({
+    kind: "watch",
+    actor: proposedBy,
+    metadata: { proposalId: proposal.id, itemId, sourceType },
+  });
+  return { proposal, created: true };
 }
 
 export async function listPendingProposals(limit = 50): Promise<UpdateProposal[]> {

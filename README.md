@@ -186,7 +186,8 @@ therefore your tier.
 | `GET` | `/v1/knowledge/gaps` | read | Unanswered questions |
 | `POST` | `/v1/answers/:id/feedback` | read | up/down |
 | `POST` | `/v1/answers/:id/feedback/comment` | read | Free-text feedback |
-| `GET` | `/v1/proposals` | write | Pending proposals from review-trust adapters |
+| `POST` | `/v1/knowledge/:id/proposals` | write | Propose a change to a record; waits for approval |
+| `GET` | `/v1/proposals` | write | Pending proposals |
 | `POST` | `/v1/proposals/:id/approve` | write | Apply a proposal |
 | `POST` | `/v1/proposals/:id/reject` | write | Discard a proposal |
 | `GET` | `/v1/questions/top` | read | Most-asked questions |
@@ -206,7 +207,7 @@ ask "how do I configure retries"    ask stream "..."         ask search "rate li
 ask knowledge add --file notes.md    ask knowledge add --title T --body B
 ask knowledge refresh <id>           ask knowledge chunks <id>
 ask knowledge reviews                ask knowledge gaps
-ask proposals list                   ask proposals approve <id>
+ask proposals create <id> --body B   ask proposals list       ask proposals approve <id>
 ask feedback <answerId> down --comment "wrong version"
 ask questions top                    ask stats                ask stats knowledge
 ask jobs run verify                  ask events tail          ask health
