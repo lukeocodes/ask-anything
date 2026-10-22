@@ -27,7 +27,7 @@ data model in `packages/db/README.md`, adding a source in
 | [0007](0007-visibility-tier-is-a-credential.md) | Visibility tier is a credential, fail closed | Accepted |
 | [0008](0008-semantic-answer-cache.md) | Tier-exact semantic answer cache | Accepted |
 | [0009](0009-decay-not-deletion.md) | Knowledge decays; deletion only on upstream removal | Accepted |
-| [0010](0010-refresh-is-a-proposal.md) | Trust decides: refresh in place, or propose for review | Accepted |
+| [0010](0010-refresh-is-a-proposal.md) | Adapters refresh in place; everyone else proposes | Accepted |
 | [0011](0011-non-destructive-crawl-refresh.md) | Non-destructive index refresh | Accepted |
 | [0012](0012-mcp-first-transport-agnostic.md) | MCP first, transport-agnostic server factory | Accepted |
 | [0013](0013-ai-sdk-provider-hub-two-model-tiers.md) | Vercel AI SDK provider hub with two model tiers | Accepted |
