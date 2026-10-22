@@ -438,6 +438,9 @@ export const updateProposals = pgTable(
       .notNull()
       .references(() => knowledgeItems.id, { onDelete: "cascade" }),
     sourceType: text("source_type").notNull(),
+    // Label of the API key that sent the proposal (ADR-0010). Null for
+    // proposals the engine raised itself.
+    proposedBy: text("proposed_by"),
     proposedTitle: text("proposed_title"),
     proposedSummary: text("proposed_summary"),
     proposedBody: text("proposed_body"),

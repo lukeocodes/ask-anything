@@ -16,7 +16,7 @@ Why one store: [ADR-0003](../../docs/0003-postgres-pgvector-single-store.md).
 | `feedback` | up/down and comments per answer |
 | `answer_cache` | Semantic answer cache, tier-exact, per-entry TTL |
 | `usage_events` | Telemetry: recorded model and job actions |
-| `update_proposals` | Changes proposed by review-trust adapters, awaiting operator approval |
+| `update_proposals` | Proposed changes to a record awaiting operator approval ([ADR-0010](../../docs/0010-refresh-is-a-proposal.md)): candidate title/summary/body, `diff`, `evidence`, `proposed_by` (label of the key that sent it) |
 | `decay_events` | Decay recomputation audit trail |
 | `events` | Domain event log; `pg_notify` rides on top |
 

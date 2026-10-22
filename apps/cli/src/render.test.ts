@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ask, keyValues, proposalsList, search } from "./render.js";
+import { ask, keyValues, proposalCreate, proposalsList, search } from "./render.js";
 
 describe("render", () => {
   it("ask prints the answer, numbered sources and the answer id", () => {
@@ -28,6 +28,16 @@ describe("render", () => {
     expect(proposalsList({ proposals: [] })).toBe("No pending proposals.");
     expect(proposalsList({ proposals: [{ id: "p1", diff: { kind: "upstream_changed" }, itemId: "i1" }] })).toBe(
       "p1  upstream_changed  i1",
+    );
+    expect(proposalsList({ proposals: [{ id: "p2", status: "pending", itemId: "i2", proposedBy: "ops" }] })).toBe(
+      "p2  pending  i2  by ops",
+    );
+  });
+
+  it("proposalCreate says whether the proposal is new", () => {
+    expect(proposalCreate({ proposal: { id: "p1", itemId: "i1" }, created: true })).toBe("Proposed: p1 for item i1");
+    expect(proposalCreate({ proposal: { id: "p1", itemId: "i1" }, created: false })).toBe(
+      "Already pending: p1 for item i1",
     );
   });
 });

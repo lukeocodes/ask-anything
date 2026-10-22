@@ -1,0 +1,1 @@
+ALTER TABLE "update_proposals" ADD COLUMN "proposed_by" text;
