@@ -24,13 +24,11 @@ The engine knows one thing about sources: the `SourceAdapter` contract in
 ```ts
 interface SourceAdapter {
   kind: string;                       // "git", "url", ...
-  trust: "upstream" | "review";       // refresh in place, or propose for review
   providers?: string[];               // hints for the adapters listing
   detect(locator): boolean;           // can this adapter take this locator
   describe(locator): { provider, name };
   index(ctx, { force }): IndexResult; // clone/fetch, list, hash-gate, prune
   refresh(item, ctx): "refreshed" | "unchanged" | "removed";
-  verify?(item, ctx): UpdateCandidate | null;   // review-trust adapters only
 }
 ```
 
@@ -40,8 +38,7 @@ order; `registerAdapter(a, { before })` lets a more specific adapter go
 ahead of a general one, and `--kind` on `sources add` overrides detection.
 Core stores the adapter's `kind` on the source row and on every record it
 produces (`sourceType` is text, not an enum, so a new kind needs no
-migration), and dispatches `index`, `refresh`, and `verify` through the
-registry.
+migration), and dispatches `index` and `refresh` through the registry.
 
 Adapters receive an `IndexContext`: the source row, `ctx.config` (the
 source's non-secret JSON config), `ctx.secret` (the value of the env var
@@ -50,7 +47,8 @@ or logged), limits from env, a logger, and a `SourcePersistence` seam
 (`refresh`, `prune`, `remove`, `registerSource`). They never touch the
 database directly.
 
-**Two adapters ship.** Both are `trust: "upstream"`:
+**Two adapters ship.** Both refresh in place
+([0010](0010-refresh-is-a-proposal.md)):
 
 - `git`: public repositories, cloned with plain `git`. See
   [0024](0024-sources-are-registered-records.md).
@@ -70,22 +68,23 @@ Each is a package exporting one `SourceAdapter`, registered in
 `packages/sources/src/index.ts`, with its own ADR when it lands. The contract
 already covers them; nothing in core changes.
 
-| Adapter | Locator | Trust | Notes |
-|---|---|---|---|
-| Private git | same as `git`, registered `before: "git"` or chosen with `--kind` | upstream | Credentials via `credentialEnv` (a token the host already issued), the SSH agent, a deploy key, or a host app installation. Never a token on argv or in a row. Visibility defaults to `private`. |
-| Git host organisation | `org:<name>` | upstream | Enumerates repositories via the host API and calls `registerSource` for each, as a `git` source. |
-| Local filesystem | `file:///path` | upstream | Same walker as `git` without the clone. Dev and air-gapped use. |
-| OpenAPI | spec URL | upstream | One record per operation, heading path from tags. |
-| Documentation platforms | site URL | upstream | Docusaurus, GitBook, Mintlify, ReadMe, and the like. Most are the `url` adapter with a sitemap; a dedicated adapter only when the platform exposes structure the HTML loses. |
-| Help centres | site URL | upstream | Usually the `url` adapter is enough. |
-| Feeds (RSS, Atom) | feed URL | review | Entries as records; the feed is the change detector. |
-| Forums and discussions | forum URL | review | Threads as records, accepted answers weighted. |
-| Wikis and drives | space, database, or folder id | review | OAuth per deployment; the token lives in the env var named by `credentialEnv`. Page tree maps directly onto the chunk tree. |
-| Chat tools | `chat://<workspace>/<channel>` | review | Messages are conversational and volatile; changes go through proposals. |
+| Adapter | Locator | Notes |
+|---|---|---|
+| Private git | same as `git`, registered `before: "git"` or chosen with `--kind` | Credentials via `credentialEnv` (a token the host already issued), the SSH agent, a deploy key, or a host app installation. Never a token on argv or in a row. Visibility defaults to `private`. |
+| Git host organisation | `org:<name>` | Enumerates repositories via the host API and calls `registerSource` for each, as a `git` source. |
+| Local filesystem | `file:///path` | Same walker as `git` without the clone. Dev and air-gapped use. |
+| OpenAPI | spec URL | One record per operation, heading path from tags. |
+| Documentation platforms | site URL | Docusaurus, GitBook, Mintlify, ReadMe, and the like. Most are the `url` adapter with a sitemap; a dedicated adapter only when the platform exposes structure the HTML loses. |
+| Help centres | site URL | Usually the `url` adapter is enough. |
+| Feeds (RSS, Atom) | feed URL | Entries as records; the feed is the change detector. |
+| Forums and discussions | forum URL | Threads as records, accepted answers weighted. |
+| Wikis and drives | space, database, or folder id | OAuth per deployment; the token lives in the env var named by `credentialEnv`. Page tree maps directly onto the chunk tree. |
+| Chat tools | `chat://<workspace>/<channel>` | Messages are conversational and volatile. Likely better as a relay outside the engine that proposes than as an adapter. |
 
-The `review` trust level exists for these: the adapter's `verify` returns an
-`UpdateCandidate`, the engine writes an `update_proposal`, and an operator
-approves it ([0010](0010-refresh-is-a-proposal.md)).
+An adapter refreshes in place. A source whose changes need a human before
+they land is not an adapter: a tool outside the engine watches it and calls
+the proposals endpoint ([0010](0010-refresh-is-a-proposal.md)). The engine
+never learns the vendor.
 
 ## Consequences
 
@@ -95,5 +94,10 @@ approves it ([0010](0010-refresh-is-a-proposal.md)).
   predictable; there is no fan-out to third parties on the critical path.
 - Freshness is the adapter's job, on its schedule. A source that is not
   indexed yet answers nothing, which is honest.
-- `trust` is the only policy knob core knows about. Everything else about a
-  source is the adapter's business.
+- Core has no policy knob per adapter. Registering one is the trust
+  decision; everything else about a source is the adapter's business.
+
+## Known gaps
+
+- The contract in code still has `trust` and `verify`, and the engine still
+  has a verify tick. See [0010](0010-refresh-is-a-proposal.md), Known gaps.

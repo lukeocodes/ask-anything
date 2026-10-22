@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Scheduled indexing and the verify tick work through everything on a cadence.
+Scheduled indexing works through everything on a cadence.
 A record being cited today matters more than one nobody retrieves.
 
 ## Decision
@@ -16,9 +16,8 @@ A record being cited today matters more than one nobody retrieves.
 After an answer, cited records whose `lastVerifiedAt` is older than
 `REVERIFY_AGE_HOURS` (default 168) are passed to an injected
 `scheduleReverify` sink. The sink is fire-and-forget. In the API it calls
-the record's adapter: `refresh` for upstream-trust sources, `verify` for
-review-trust ones. Records with no adapter (`api`, `manual`) are skipped and
-not stamped.
+the record's adapter's `refresh`. Records with no adapter (`api`, `manual`)
+are skipped and not stamped.
 
 Both `ask()` and `askStream()` await the age query before returning; on the
 streaming path the deltas have already been delivered and only `done` waits.
@@ -34,3 +33,8 @@ record with no adapter returns 409; an unreachable upstream returns 502.
 
 - Popular knowledge is verified on demand.
 - The core does not import adapters. The sink is injected.
+
+## Known gaps
+
+- The sink in `apps/api` still branches on adapter `trust` and calls
+  `verify`. See [0010](0010-refresh-is-a-proposal.md), Known gaps.
