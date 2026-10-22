@@ -73,9 +73,8 @@ Surfaces are `api`, `cli`, `mcp`, `backfill`, `warm`.
 
 ## Daily run
 
-A scheduler on the maintainer's machine runs an agent here once a day, two
-turns: work, then housekeeping (ADR-0026). The scheduler config is not in
-this repo. The agent reads this section and
+A scheduler on the maintainer's machine runs an agent here once a day, one
+turn (ADR-0026). The scheduler config is not in this repo. The agent reads this section and
 `docs/goals.md`. Nothing below applies to a human.
 
 **State is git and GitHub.** You remember nothing between turns. Start every
@@ -106,15 +105,14 @@ completes it; keep the notes under each box current.
 - [ ] 6 Ready: ADR Known gaps and docs/goals.md updated, body final, marked ready, @lukeocodes mentioned
 ```
 
-**Work turn.** Advance the PR by at least one stage. Stop at a clean point:
-code compiles, tests pass, or the broken state is described in the body.
-Do not start stage 3 until stages 1 and 2 are in the body.
-
-**Housekeeping turn.** Commit anything uncommitted (`ADR-NNNN` lines, no
-trailers), push, make sure the draft PR exists and its body matches the
-branch, wait for CI. If stage 5 is ticked: remove the Known gaps lines the PR
-closes, update `docs/goals.md`, tick 6, `gh pr ready`, comment
-`@lukeocodes ready for review`. Otherwise leave it draft.
+**Each turn.** Advance the PR by at least one stage, then housekeeping,
+always, before you stop: commit everything (`ADR-NNNN` lines, no trailers),
+push, make sure the draft PR exists and its body matches the branch, wait
+for CI. If stage 5 is ticked: remove the Known gaps lines the PR closes,
+update `docs/goals.md`, tick 6, `gh pr ready`, comment
+`@lukeocodes ready for review`. Otherwise leave it draft. Do not start
+stage 3 until stages 1 and 2 are in the body. Stop at a clean point: code
+compiles and tests pass, or the broken state is described in the body.
 
 **No decisions.** The Decision section of every ADR is read-only to you.
 You may remove a Known gaps line you fixed and add one you found, with the
