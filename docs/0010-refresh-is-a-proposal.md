@@ -68,12 +68,22 @@ watches the thing and proposes.
 
 ## Known gaps
 
-- Not built yet. The code carries the earlier shape: `trust` and `verify`
-  on `SourceAdapter` (`packages/core/src/source-adapter.ts`), a verify tick
+Partially built. The store and the decision side are done; the way in is
+not, and the earlier adapter-side shape is still in the code.
+
+- Built: `proposeUpdate` (one pending per record), `listPendingProposals`,
+  `approveProposal` via `applyRevision`, `rejectProposal`
+  (`packages/core/src/proposals.ts`); `GET /v1/proposals`,
+  `POST /v1/proposals/:id/approve|reject` recording the key label as
+  `decidedBy` (`apps/api/src/routes/admin.ts`); `ask proposals
+  list|approve|reject` and their management MCP tools; the
+  `update_proposals` table.
+- Missing: `POST /v1/knowledge/:id/proposals`, `ask proposals create <id>`,
+  and a `proposed_by` column. `proposeUpdate` is reachable only from the
+  verify tick, which no shipped adapter feeds.
+- To remove: `trust` and `verify` on `SourceAdapter`
+  (`packages/core/src/source-adapter.ts`), the verify tick
   (`apps/api/src/jobs/monitor.ts`, `MONITOR_CRON`,
-  `POST /v1/admin/run-verify`, `ask jobs run verify`) that no shipped
-  adapter feeds, and no `POST /v1/knowledge/:id/proposals`. `proposeUpdate`
-  in `packages/core/src/proposals.ts` is reachable only from that tick.
-  `update_proposals` has no column for the proposing key. The root README,
-  `.env.example`, and `packages/sources/README.md` describe the code as it
-  is until this lands.
+  `POST /v1/admin/run-verify`, `ask jobs run verify`), and the `verify`
+  branch in the reverify sink. The root README, `.env.example`, and
+  `packages/sources/README.md` describe that code until it goes.
