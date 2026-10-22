@@ -16,9 +16,10 @@ maintainer can see each step before it lands.
 
 ## Decision
 
-A scheduler runs an agent against this repo once a day, in two turns: a
-work turn, then a housekeeping turn. The turn count is the throttle; it is
-raised by editing the schedule, not the agent.
+A scheduler runs an agent against this repo once a day, one turn. Every
+turn ends with housekeeping: commit, push, draft PR current, ready and
+maintainer mentioned when the stages are done. The turn count is the
+throttle; it is raised by editing the schedule, not the agent.
 
 The agent follows the "Daily run" section of `AGENTS.md`. The fixed points:
 
@@ -48,4 +49,4 @@ outside this repo. The repo carries only the process and the queue.
 - The goals queue has to be kept honest. A goal that is really a decision
   belongs under "Needs a decision first", or the agent will stall on it.
 - A run that finds nothing in the queue does nothing. That is correct.
-- Two turns a day is slow by design. Raising it is a schedule edit.
+- One turn a day is slow by design. Raising it is a schedule edit.
