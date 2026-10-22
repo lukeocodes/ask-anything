@@ -70,6 +70,8 @@ Surfaces are `api`, `cli`, `mcp`, `backfill`, `warm`.
   add the REST endpoint and the CLI command together, then the MCP tool
   appears on its own. Never add a management path that skips the CLI.
 - Identity is `lukeocodes`. No co-author trailers, no agent names, anywhere.
+- Commit subjects and PR titles are Conventional Commits: `feat:`, `fix:`,
+  `docs:`, `chore:`, `refactor:`, `test:`, with an optional scope. Always.
 
 ## Daily run
 
@@ -88,8 +90,9 @@ gh pr list --repo lukeocodes/ask-anything --state open --label daily --json numb
   Check its branch out as a worktree under `.agents/worktrees/<branch>` and
   read its body for the stage you are at.
 - None: take the first item in the Queue of `docs/goals.md`, branch
-  `daily/<short-slug>` from `main`, open a draft PR labelled `daily` with
-  the stage checklist below, and start at stage 1.
+  `daily/<short-slug>` from `main`, open a draft PR labelled `daily`, titled
+  as a Conventional Commit, with the stage checklist below, and start at
+  stage 1.
 - Only PRs labelled `needs-decision`: start the next goal that no open PR
   covers. Never touch a `needs-decision` PR.
 
@@ -106,7 +109,8 @@ completes it; keep the notes under each box current.
 ```
 
 **Each turn.** Advance the PR by at least one stage, then housekeeping,
-always, before you stop: commit everything (`ADR-NNNN` lines, no trailers),
+always, before you stop: commit everything (Conventional Commits subject,
+`ADR-NNNN` lines, no trailers),
 push, make sure the draft PR exists and its body matches the branch, wait
 for CI. If stage 5 is ticked: remove the Known gaps lines the PR closes,
 update `docs/goals.md`, tick 6, `gh pr ready`, comment
