@@ -54,7 +54,6 @@ packages/config  env schema, dotenv loader, logging, logdrain              (ADR-
 eval/         golden-set accuracy harness, `pnpm eval`                     (ADR-0001)
 scripts/      operator scripts: warm-cache, probe-ask                      (ADR-0008)
 docs/         ADRs                                                         (docs/README.md)
-cao/          scheduler profile, flows, and guard for the daily run        (ADR-0026)
 ```
 
 Surfaces are `api`, `cli`, `mcp`, `backfill`, `warm`.
@@ -74,8 +73,9 @@ Surfaces are `api`, `cli`, `mcp`, `backfill`, `warm`.
 
 ## Daily run
 
-A scheduler runs an agent here once a day, two turns: work, then
-housekeeping (ADR-0026, files in `cao/`). The agent reads this section and
+A scheduler on the maintainer's machine runs an agent here once a day, two
+turns: work, then housekeeping (ADR-0026). The scheduler config is not in
+this repo. The agent reads this section and
 `docs/goals.md`. Nothing below applies to a human.
 
 **State is git and GitHub.** You remember nothing between turns. Start every

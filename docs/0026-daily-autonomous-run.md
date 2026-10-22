@@ -38,7 +38,8 @@ The agent follows the "Daily run" section of `AGENTS.md`. The fixed points:
 - Commits cite `ADR-NNNN`, carry the `lukeocodes` identity, and no trailer
   names an agent ([AGENTS.md](../AGENTS.md)).
 
-The schedule, profile, and flow files live in `cao/`.
+The schedule, profile, and flow files are the maintainer's machine config,
+outside this repo. The repo carries only the process and the queue.
 
 ## Consequences
 
