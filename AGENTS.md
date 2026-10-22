@@ -6,7 +6,7 @@ harness-specific instructions here.
 ## What this is
 
 `ask`: a grounded, cited knowledge Q&A engine exposed as an MCP server and a
-REST API, managed by a CLI. Sources are adapters; two ship. There is no
+REST API, managed by a CLI. Goals, in order, are in `docs/goals.md`. Sources are adapters; two ship. There is no
 architecture doc. The design and the reasons for it are in `docs/` as
 Architecture Decision Records; the system diagram is in the root README.
 
@@ -70,3 +70,60 @@ Surfaces are `api`, `cli`, `mcp`, `backfill`, `warm`.
   add the REST endpoint and the CLI command together, then the MCP tool
   appears on its own. Never add a management path that skips the CLI.
 - Identity is `lukeocodes`. No co-author trailers, no agent names, anywhere.
+
+## Daily run
+
+A scheduler on the maintainer's machine runs an agent here once a day, two
+turns: work, then housekeeping (ADR-0026). The scheduler config is not in
+this repo. The agent reads this section and
+`docs/goals.md`. Nothing below applies to a human.
+
+**State is git and GitHub.** You remember nothing between turns. Start every
+turn the same way:
+
+```bash
+gh pr list --repo lukeocodes/ask-anything --state open --label daily --json number,url,headRefName,isDraft,labels
+```
+
+- One open PR labelled `daily` without `needs-decision`: that is your work.
+  Check its branch out as a worktree under `.agents/worktrees/<branch>` and
+  read its body for the stage you are at.
+- None: take the first item in the Queue of `docs/goals.md`, branch
+  `daily/<short-slug>` from `main`, open a draft PR labelled `daily` with
+  the stage checklist below, and start at stage 1.
+- Only PRs labelled `needs-decision`: start the next goal that no open PR
+  covers. Never touch a `needs-decision` PR.
+
+**Stages.** The PR body is this checklist. Tick a box in the commit that
+completes it; keep the notes under each box current.
+
+```
+- [ ] 1 Ideation: the goal, the ADR line it closes, why it is next, what "done" is
+- [ ] 2 Plan: files, what could go wrong, how it is verified
+- [ ] 3 Build
+- [ ] 4 Verify: pnpm typecheck, pnpm test, CI green, pnpm eval if retrieval or answering changed
+- [ ] 5 Adversarial review: a fresh read of the whole diff against the ADR as a hostile reviewer; what it found, what was fixed
+- [ ] 6 Ready: ADR Known gaps and docs/goals.md updated, body final, marked ready, @lukeocodes mentioned
+```
+
+**Work turn.** Advance the PR by at least one stage. Stop at a clean point:
+code compiles, tests pass, or the broken state is described in the body.
+Do not start stage 3 until stages 1 and 2 are in the body.
+
+**Housekeeping turn.** Commit anything uncommitted (`ADR-NNNN` lines, no
+trailers), push, make sure the draft PR exists and its body matches the
+branch, wait for CI. If stage 5 is ticked: remove the Known gaps lines the PR
+closes, update `docs/goals.md`, tick 6, `gh pr ready`, comment
+`@lukeocodes ready for review`. Otherwise leave it draft.
+
+**No decisions.** The Decision section of every ADR is read-only to you.
+You may remove a Known gaps line you fixed and add one you found, with the
+file. If the work needs a choice no ADR settles, the ADRs disagree with each
+other, or `docs/goals.md` asks for something an ADR forbids: stop, write the
+choice and the options in the PR body under `## Needs a decision`, add the
+`needs-decision` label, comment `@lukeocodes`, and end the turn. The
+maintainer decides and tells you separately.
+
+**Never:** merge, push to `main`, force-push, edit a PR you did not open,
+rewrite an ADR Decision, add a goal to `docs/goals.md`, open a second
+`daily` PR, or work outside the worktree.
