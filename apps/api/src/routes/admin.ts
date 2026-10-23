@@ -10,7 +10,6 @@ import {
 } from "@ask/core";
 import type { FastifyInstance } from "fastify";
 import { runGapBackfill } from "../jobs/backfill.js";
-import { verifyReviewItems } from "../jobs/monitor.js";
 import { requireScope } from "../auth.js";
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
@@ -63,14 +62,6 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // Manual triggers for the background jobs (also run on cron — see jobs/).
-  // run-verify: re-check items owned by review-trust adapters; a no-op with
-  // only the shipped upstream-trust adapters.
-  app.post(
-    "/v1/admin/run-verify",
-    { preHandler: requireScope("admin") },
-    async () => verifyReviewItems(),
-  );
-
   app.post(
     "/v1/admin/run-decay",
     { preHandler: requireScope("admin") },

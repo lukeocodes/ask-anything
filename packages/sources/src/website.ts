@@ -303,7 +303,6 @@ async function refresh(item: KnowledgeItem, ctx: IndexContext, adapterOpts: Webs
 export function createWebsiteAdapter(opts: WebsiteOptions = {}): SourceAdapter {
   return {
     kind: "url",
-    trust: "upstream",
     providers: ["web"],
     detect: looksLikeWebsite,
     describe: describeWebsite,

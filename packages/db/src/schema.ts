@@ -422,13 +422,14 @@ export const usageEvents = pgTable(
   ],
 );
 
-// --- Update proposals (review-trust adapters → operator approval) ------------
+// --- Update proposals (anyone with a write key → operator approval) ----------
 
 /**
- * A proposed change to an EXISTING knowledge item, produced by a review-trust
- * adapter's verify pass. The engine never proactively seeks new knowledge — it
- * only proposes updates to things it already has. Proposals are listed for an operator (via
- * the CLI or management MCP) to approve before they touch the knowledgebase.
+ * A proposed change to an EXISTING knowledge item, sent by any write-scope
+ * key through `POST /v1/knowledge/:id/proposals` (ADR-0010). Registered
+ * adapters never propose; they refresh in place. Proposals are listed for an
+ * operator (via the CLI or management MCP) to approve before they touch the
+ * knowledgebase.
  */
 export const updateProposals = pgTable(
   "update_proposals",

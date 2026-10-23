@@ -16,7 +16,6 @@ import {
 } from "@ask/db";
 import { CronExpressionParser } from "cron-parser";
 import { getItem, refreshCanonical } from "./knowledge.js";
-import { proposeUpdate } from "./proposals.js";
 import {
   SourceBusyError,
   adapterFor,
@@ -574,20 +573,18 @@ export async function refreshItem(item: KnowledgeItem, context: Partial<IndexCon
 export interface ReverifyResult {
   id: string;
   /**
-   *  - refreshed | unchanged | removed → upstream-trust adapter re-read it in place
-   *  - proposed  → review-trust adapter saw a change; a proposal was created
-   *  - verified  → review-trust adapter saw no change
+   *  - refreshed | unchanged | removed → the adapter re-read it in place
    *  - skipped   → not source-owned / no source / no adapter (nothing checked it, so nothing stamps it)
    *  - failed    → the adapter threw (logged)
    */
-  action: RefreshAction | "proposed" | "verified" | "skipped" | "failed";
+  action: RefreshAction | "skipped" | "failed";
 }
 
 /**
  * Targeted re-verify of specific items (the answer path fires this for cited
- * items older than REVERIFY_AGE_HOURS). Each source-owned item goes through
- * its adapter: `upstream` trust refreshes in place, `review` trust verifies
- * and proposes. Items with no source or adapter are left alone (ADR-0021).
+ * items older than REVERIFY_AGE_HOURS). Each source-owned item is refreshed
+ * in place through its adapter (ADR-0010). Items with no source or adapter
+ * are left alone (ADR-0021).
  * Best-effort — never throws; the per-item outcome is returned for callers
  * that report it. Ids that match no item are omitted.
  */
@@ -609,18 +606,7 @@ export async function reverifyItems(itemIds: string[]): Promise<ReverifyResult[]
         continue;
       }
       const adapter = adapterFor(source.kind);
-      const ctx = adapterContext(source);
-      if (adapter.trust === "review" && adapter.verify) {
-        const candidate = await adapter.verify(item, ctx);
-        if (candidate) {
-          await proposeUpdate(item.id, item.sourceType, candidate);
-          results.push({ id, action: "proposed" });
-        } else {
-          results.push({ id, action: "verified" });
-        }
-        continue;
-      }
-      results.push({ id, action: await adapter.refresh(item, ctx) });
+      results.push({ id, action: await adapter.refresh(item, adapterContext(source)) });
     } catch (err) {
       log.warn({ err, itemId: id }, "reverify item failed");
       results.push({ id, action: "failed" });

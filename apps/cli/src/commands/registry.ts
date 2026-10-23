@@ -353,13 +353,12 @@ export const commands: readonly Command[] = [
 
   define({
     name: "jobs run",
-    description:
-      "Trigger a background job now (POST /v1/admin/run-<job>): verify (review-trust sources → proposals), decay, or backfill.",
+    description: "Trigger a background job now (POST /v1/admin/run-<job>): decay or backfill.",
     args: z.object({
-      job: z.enum(["verify", "decay", "backfill"]),
+      job: z.enum(["decay", "backfill"]),
     }),
     positionals: ["job"],
-    example: { job: "verify" },
+    example: { job: "decay" },
     run: (a, ctx) => client(ctx).post(`/v1/admin/run-${a.job}`),
   }),
 
@@ -380,7 +379,7 @@ export const commands: readonly Command[] = [
 
   define({
     name: "sources adapters",
-    description: "The source adapters this deployment can index with: kind, trust, provider hints (GET /v1/sources/adapters).",
+    description: "The source adapters this deployment can index with: kind, provider hints (GET /v1/sources/adapters).",
     args: z.object({}),
     example: {},
     run: (_a, ctx) => client(ctx).get("/v1/sources/adapters"),

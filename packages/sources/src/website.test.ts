@@ -29,10 +29,9 @@ const INDEX = `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
 </sitemapindex>`;
 
 describe("adapter shape", () => {
-  it("is the website adapter with upstream trust", () => {
+  it("is the website adapter", () => {
     expect(website.kind).toBe("url");
-    expect(website.trust).toBe("upstream");
-    expect(website.verify).toBeUndefined();
+    expect(website.providers).toEqual(["web"]);
   });
 
   it("claims any http(s) URL and names it host/path", () => {

@@ -10,10 +10,9 @@ import { blobUrl, describeGit, gitPublic, looksLikeGit, makeFileFilter } from ".
 import { memoryPersistence, testContext } from "./test-helpers.js";
 
 describe("adapter shape", () => {
-  it("is the public git adapter with upstream trust", () => {
+  it("is the public git adapter", () => {
     expect(gitPublic.kind).toBe("git");
-    expect(gitPublic.trust).toBe("upstream");
-    expect(gitPublic.verify).toBeUndefined();
+    expect(gitPublic.providers).toEqual(["github", "gitlab", "git"]);
   });
 });
 

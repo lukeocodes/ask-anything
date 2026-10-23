@@ -72,13 +72,11 @@ function sourceErrorReply(err: unknown, reply: FastifyReply) {
 export async function registerSourceRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/sources", { preHandler: requireScope("write") }, async () => ({ sources: await listSources() }));
 
-  // The adapters this deployment can index with: kind, trust, provider hints.
+  // The adapters this deployment can index with: kind, provider hints.
   app.get("/v1/sources/adapters", { preHandler: requireScope("read") }, async () => ({
     adapters: listAdapters().map((a) => ({
       kind: a.kind,
-      trust: a.trust,
       providers: a.providers ?? [],
-      verify: typeof a.verify === "function",
     })),
   }));
 

@@ -29,7 +29,7 @@ export interface ProposeResult {
  * touches the item; the proposal waits for `approveProposal` / `rejectProposal`.
  * One pending proposal per item: a second call while one is pending returns
  * the existing one with `created: false`. `proposedBy` is the label of the
- * API key that sent it; the engine's own verify tick passes none.
+ * API key that sent it.
  */
 export async function proposeUpdate(
   itemId: string,

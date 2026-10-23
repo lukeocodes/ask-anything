@@ -132,9 +132,6 @@ const EnvSchema = z.object({
   ASK_API_KEY: z.string().optional(),
 
   // Jobs
-  // Verify tick: items owned by review-trust adapters are re-checked upstream
-  // and changes become proposals. A no-op with only upstream-trust adapters.
-  MONITOR_CRON: z.string().default("0 */6 * * *"),
   DECAY_CRON: z.string().default("0 3 * * *"),
   // Re-warm the answer cache for the most-asked questions (default: every 4h).
   WARM_CACHE_CRON: z.string().default("30 */4 * * *"),

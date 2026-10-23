@@ -2,7 +2,6 @@ import { loadEnv, logger } from "@ask/config";
 import { indexDueSources, runDecay } from "@ask/core";
 import cron from "node-cron";
 import { runGapBackfill } from "./backfill.js";
-import { verifyReviewItems } from "./monitor.js";
 import { runCacheWarm } from "./warm.js";
 
 const log = logger("scheduler");
@@ -13,17 +12,6 @@ const log = logger("scheduler");
  */
 export function startScheduler(): void {
   const env = loadEnv();
-
-  // Verify tick: items owned by a `review`-trust adapter are checked upstream
-  // and changes become proposals. A no-op while every adapter is `upstream`.
-  if (cron.validate(env.MONITOR_CRON)) {
-    cron.schedule(env.MONITOR_CRON, () => {
-      verifyReviewItems().catch((err) => log.error({ err }, "verify job failed"));
-    });
-    log.info({ cron: env.MONITOR_CRON }, "verify job scheduled");
-  } else {
-    log.warn({ cron: env.MONITOR_CRON }, "invalid MONITOR_CRON; verify disabled");
-  }
 
   if (cron.validate(env.DECAY_CRON)) {
     cron.schedule(env.DECAY_CRON, () => {

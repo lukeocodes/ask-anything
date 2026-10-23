@@ -8,13 +8,11 @@ import type { IngestInput } from "./types.js";
  * only this interface and a registry. The engine ships two adapters —
  * public git repository crawling and website crawling — in `@ask/sources`.
  * Core never imports an adapter; the API registers them at startup.
+ *
+ * There is no trust level and no verify hook: an adapter is trusted by being
+ * registered and its records refresh in place (ADR-0010). Anything that needs
+ * a human before it lands proposes through the API instead.
  */
-
-/**
- * `upstream`: the source is authoritative — records are refreshed in place.
- * `review`: changes become update proposals for an operator to approve.
- */
-export type Trust = "upstream" | "review";
 
 export interface AdapterDescription {
   /** Stored in `knowledge_sources.provider` (github | gitlab | git | web | …). */
@@ -78,18 +76,9 @@ export interface IndexResult {
 
 export type RefreshAction = "refreshed" | "unchanged" | "removed";
 
-export interface UpdateCandidate {
-  proposedTitle?: string;
-  proposedSummary?: string;
-  proposedBody?: string;
-  diff: Record<string, unknown>;
-  evidence: { url?: string; note?: string }[];
-}
-
 export interface SourceAdapter {
   /** `knowledge_sources.kind` and `knowledge_items.source_type`: "git" | "url" | future adapters. */
   readonly kind: string;
-  readonly trust: Trust;
   /** Provider values `describe` can return (github | gitlab | …) — a hint for `GET /v1/sources/adapters`. */
   readonly providers?: string[];
   /** True when this adapter can index the locator. First match in registration order wins. */
@@ -99,8 +88,6 @@ export interface SourceAdapter {
   index(ctx: IndexContext, opts: { force: boolean }): Promise<IndexResult>;
   /** Re-read ONE source-owned record. `removed` when it is gone upstream (the record is deleted). */
   refresh(item: KnowledgeItem, ctx: IndexContext): Promise<RefreshAction>;
-  /** Only meaningful for trust "review": a changed upstream becomes a proposal, never an in-place write. */
-  verify?(item: KnowledgeItem, ctx: IndexContext): Promise<UpdateCandidate | null>;
 }
 
 /** Raised when the upstream (remote, host, page) cannot be reached or read. */

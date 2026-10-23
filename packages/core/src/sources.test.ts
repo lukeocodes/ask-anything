@@ -35,7 +35,6 @@ describe("parseLocator", () => {
 describe("adapter registry", () => {
   const fake = (kind: string, accept: (l: string) => boolean): SourceAdapter => ({
     kind,
-    trust: "upstream",
     detect: accept,
     describe: (locator) => ({ provider: kind, name: locator }),
     index: async () => ({ created: 0, changed: 0, unchanged: 0, pruned: 0 }),
