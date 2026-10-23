@@ -4,7 +4,7 @@ The whole stack runs as one service (`@ask/api`): REST API + background jobs +
 the hosted MCP endpoint (`/mcp`). GCP hosts it natively — a warm Cloud Run
 service plus Cloud SQL for Postgres with `pgvector`. No rearchitecting.
 
-> **⚠️ Single instance only.** The cron jobs (index / monitor / decay / warm /
+> **⚠️ Single instance only.** The cron jobs (index / decay / warm /
 > backfill) must run in exactly ONE process — a second instance means duplicate
 > runs. (Postgres LISTEN is per SSE client and harmless across instances.) Pin
 > `--min-instances=1 --max-instances=1`.
@@ -156,7 +156,7 @@ gcloud run services logs read ask-anything --region "$REGION" --limit=50
 # look for: "ask-api listening"
 ```
 
-Cron jobs (index/monitor/decay/warm/backfill) fire on their schedules inside the
+Cron jobs (index/decay/warm/backfill) fire on their schedules inside the
 same instance. Pending proposals are reviewed with the `ask` CLI or
 the management MCP over the REST API (`GET /v1/proposals`).
 

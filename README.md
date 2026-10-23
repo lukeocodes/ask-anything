@@ -52,9 +52,9 @@ ask "how do I configure the thing"
   schedule.
 - **Three ways to refresh.** Scheduled index runs, forced runs from the
   CLI, and per-record refresh on demand.
-- **Human in the loop where it matters.** Each adapter declares its trust:
-  upstream-trust records track their source automatically; review-trust
-  changes become proposals you approve.
+- **Human in the loop where it matters.** Source-owned records track their
+  source automatically. Everything else changes by proposal, and you
+  approve it.
 - **Public and private tiers.** Every record and every API key carries a
   visibility tier. The server caps requests to the key. Fail closed.
 - **Semantic answer cache.** Repeat questions in the same tier return
@@ -103,9 +103,9 @@ Each source has a `visibility` tier, optional `branch`, `include` and
 to it: they refresh in place and are pruned when the file or page is gone.
 
 Every source type is a `SourceAdapter` ([ADR-0020](./docs/0020-sources-seed-and-refresh.md)):
-`detect`, `describe`, `index`, `refresh`, optional `verify`, and a `trust`
-level that decides whether changes land in place or as proposals for review.
-The engine ships the two above and nothing else. Private repositories, org
+`detect`, `describe`, `index`, `refresh`. An adapter is trusted by being
+registered: its records refresh in place
+([ADR-0010](./docs/0010-refresh-is-a-proposal.md)). The engine ships the two above and nothing else. Private repositories, org
 enumeration, local folders, docs platforms, OpenAPI, help centres, feeds,
 forums, wikis, and chat tools are planned adapters, laid out in that ADR.
 Anything else goes in through `ask knowledge add`.
@@ -125,7 +125,6 @@ and runs every enabled source whose own `schedule`, or
 | Job | Env | Default | Does |
 |---|---|---|---|
 | Index tick | `INDEX_CRON` | every 15 min | Run due sources |
-| Verify | `MONITOR_CRON` | every 6h | Ask review-trust adapters about their records. Changes become proposals. No shipped adapter is review-trust yet. |
 | Decay | `DECAY_CRON` | daily 03:00 | Recompute confidence. Below threshold flips to `stale`. |
 | Backfill | `BACKFILL_CRON` | daily 05:00 | Re-ask logged gaps. Answerable ones close. |
 | Warm cache | `WARM_CACHE_CRON` | every 4h | Re-ask the most-asked questions. |
@@ -135,7 +134,6 @@ and runs every enabled source whose own `schedule`, or
 ```bash
 ask sources index <id> --force
 ask sources index-all
-ask jobs run verify
 ask jobs run decay
 ask jobs run backfill
 ask cache invalidate
@@ -177,7 +175,7 @@ therefore your tier.
 | `GET` | `/v1/knowledge/:id/chunks` | read | A record's chunk tree |
 | `GET` | `/v1/chunks/:id/context` | read | A chunk with parent, siblings, children |
 | `GET` `POST` | `/v1/sources` | write | List or register sources (`config`, `credentialEnv` optional) |
-| `GET` | `/v1/sources/adapters` | read | The registered adapters and their trust |
+| `GET` | `/v1/sources/adapters` | read | The registered adapters |
 | `GET` `PATCH` `DELETE` | `/v1/sources/:id` | write / admin | Inspect, update, remove (`?purge=true`) |
 | `POST` | `/v1/sources/:id/index` | admin | Index one source now (`{force}`) |
 | `POST` | `/v1/sources/index-all` | admin | Index every enabled source |
@@ -194,7 +192,7 @@ therefore your tier.
 | `GET` | `/v1/events` | read | Domain events over SSE |
 | `GET` | `/v1/admin/stats` | admin | 24h latency, cache hit rate, cost |
 | `GET` | `/v1/admin/knowledge-stats` | admin | Record and stale counts, age per source |
-| `POST` | `/v1/admin/run-verify`, `run-decay`, `run-backfill` | admin | Force a job |
+| `POST` | `/v1/admin/run-decay`, `run-backfill` | admin | Force a job |
 | `POST` | `/v1/admin/invalidate-cache` | admin | Flush the answer cache |
 | `GET` | `/health` | none | Liveness |
 
@@ -210,7 +208,7 @@ ask knowledge reviews                ask knowledge gaps
 ask proposals create <id> --body B   ask proposals list       ask proposals approve <id>
 ask feedback <answerId> down --comment "wrong version"
 ask questions top                    ask stats                ask stats knowledge
-ask jobs run verify                  ask events tail          ask health
+ask jobs run decay                   ask events tail          ask health
 ```
 
 **Management MCP.** `apps/mgmt-mcp` exposes one tool per CLI command,
