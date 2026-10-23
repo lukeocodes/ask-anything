@@ -12,20 +12,15 @@ from the top of the queue and never from the second list.
 
 A goal is done when the Known gaps line it points at is gone from the ADR.
 
-1. Remove the adapter-side review path: `trust` and `verify` on the
-   contract, the verify tick, `MONITOR_CRON`, `run-verify`,
-   `ask jobs run verify`, the `verify` branch in the reverify sink, and the
-   README, `.env.example`, and `packages/sources/README.md` text that
-   describes them. ADR-0010 "To remove", ADR-0020 and ADR-0021 Known gaps.
-2. README says sources can be "public or private". Only public git ships.
+1. README says sources can be "public or private". Only public git ships.
    ADR-0020.
-3. `scripts/probe-retrieval.ts` is not in the layout in `AGENTS.md`. Fold it
+2. `scripts/probe-retrieval.ts` is not in the layout in `AGENTS.md`. Fold it
    into `probe-ask`, list it, or delete it. ADR-0008.
-4. Stale as a queue: scheduled indexing and on-demand refresh take `stale`
+3. Stale as a queue: scheduled indexing and on-demand refresh take `stale`
    records first. ADR-0009, Known gaps.
-5. The gap ledger clusters paraphrases through the `questions` table instead
+4. The gap ledger clusters paraphrases through the `questions` table instead
    of recording each as its own gap. ADR-0022, Known gaps.
-6. Grow `eval/golden.jsonl` past three cases, from the two shipped adapters'
+5. Grow `eval/golden.jsonl` past three cases, from the two shipped adapters'
    own docs so the set needs no private data. ADR-0001.
 
 ## Needs a decision first

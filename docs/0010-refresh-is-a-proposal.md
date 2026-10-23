@@ -68,7 +68,7 @@ watches the thing and proposes.
 
 ## Known gaps
 
-Built, with the earlier adapter-side shape still in the code.
+Built.
 
 - Built: `proposeUpdate` (one pending per record), `listPendingProposals`,
   `approveProposal` via `applyRevision`, `rejectProposal`
@@ -82,9 +82,7 @@ Built, with the earlier adapter-side shape still in the code.
 - One pending per record is a select then an insert in `proposeUpdate`
   (`packages/core/src/proposals.ts`), not a constraint. Two requests for
   the same record at the same moment can both insert.
-- To remove: `trust` and `verify` on `SourceAdapter`
-  (`packages/core/src/source-adapter.ts`), the verify tick
-  (`apps/api/src/jobs/monitor.ts`, `MONITOR_CRON`,
-  `POST /v1/admin/run-verify`, `ask jobs run verify`), and the `verify`
-  branch in the reverify sink. The root README, `.env.example`, and
-  `packages/sources/README.md` describe that code until it goes.
+- `knowledgeStatusEnum` still carries `proposed` ("exists only as a
+  candidate, not yet approved", `packages/db/src/schema.ts`). Nothing writes
+  it. It is a leftover of an engine that proposed new knowledge; proposals
+  here only target existing records.

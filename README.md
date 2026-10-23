@@ -105,10 +105,11 @@ to it: they refresh in place and are pruned when the file or page is gone.
 Every source type is a `SourceAdapter` ([ADR-0020](./docs/0020-sources-seed-and-refresh.md)):
 `detect`, `describe`, `index`, `refresh`. An adapter is trusted by being
 registered: its records refresh in place
-([ADR-0010](./docs/0010-refresh-is-a-proposal.md)). The engine ships the two above and nothing else. Private repositories, org
-enumeration, local folders, docs platforms, OpenAPI, help centres, feeds,
-forums, wikis, and chat tools are planned adapters, laid out in that ADR.
-Anything else goes in through `ask knowledge add`.
+([ADR-0010](./docs/0010-refresh-is-a-proposal.md)). The engine ships the
+two above and nothing else. Private repositories, org enumeration, local
+folders, docs platforms, OpenAPI, help centres, feeds, forums, wikis, and
+chat tools are planned adapters, laid out in that ADR. Anything else goes in
+through `ask knowledge add`.
 
 ## Indexing
 

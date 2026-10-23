@@ -54,6 +54,8 @@ events cascade with the row.
 
 ## Known gaps
 
-- `stale` is a label, not a queue. Scheduled indexing and the verify tick
-  take records in no particular order, so stale items are no likelier to be
-  checked first.
+- `stale` is a label, not a queue. Scheduled indexing takes records in no
+  particular order, so stale items are no likelier to be checked first.
+- The Decision says "the verify tick selects `active` and `stale` items
+  alike". There is no verify tick ([0010](0010-refresh-is-a-proposal.md));
+  only scheduled indexing re-reads stale items.

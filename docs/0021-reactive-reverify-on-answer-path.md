@@ -36,5 +36,7 @@ record with no adapter returns 409; an unreachable upstream returns 502.
 
 ## Known gaps
 
-- The sink in `apps/api` still branches on adapter `trust` and calls
-  `verify`. See [0010](0010-refresh-is-a-proposal.md), Known gaps.
+- A source whose `kind` has no registered adapter makes `adapterFor` throw
+  inside `reverifyItems` (`packages/core/src/sources.ts`), so the item is
+  reported `failed` and logged, not `skipped` as the Decision says for "no
+  adapter".
