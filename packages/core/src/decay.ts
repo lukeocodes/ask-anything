@@ -23,7 +23,7 @@ import {
  *   effective = baseConfidence * exp(-lambdaEff * ageDays)
  *
  * Items whose effective confidence falls below STALE_THRESHOLD are marked
- * `stale` and re-read by the next source index / verify pass — never deleted.
+ * `stale` and re-read by the next source index — never deleted.
  */
 export const STALE_THRESHOLD = 0.4;
 const MS_PER_DAY = 86_400_000;

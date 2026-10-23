@@ -251,7 +251,6 @@ async function refresh(item: KnowledgeItem, ctx: IndexContext, adapterOpts: GitP
 export function createGitPublicAdapter(opts: GitPublicOptions = {}): SourceAdapter {
   return {
     kind: "git",
-    trust: "upstream",
     providers: ["github", "gitlab", "git"],
     detect: looksLikeGit,
     describe: describeGit,

@@ -62,8 +62,9 @@ describe("parseCommandArgs", () => {
 
   it("validates enums and rejects unknown flags", () => {
     expect(() => parseCommandArgs(cmd("jobs run"), ["nope"])).toThrow(/<job>/);
-    expect(() => parseCommandArgs(cmd("jobs run"), ["verify", "--source", "x"])).toThrow(/unknown flag --source/);
-    expect(parseCommandArgs(cmd("jobs run"), ["verify"])).toEqual({ job: "verify" });
+    expect(() => parseCommandArgs(cmd("jobs run"), ["verify"])).toThrow(/<job>/);
+    expect(() => parseCommandArgs(cmd("jobs run"), ["decay", "--source", "x"])).toThrow(/unknown flag --source/);
+    expect(parseCommandArgs(cmd("jobs run"), ["decay"])).toEqual({ job: "decay" });
     expect(() => parseCommandArgs(cmd("search"), ["q", "--bogus", "1"])).toThrow(/unknown flag --bogus/);
     expect(() => parseCommandArgs(cmd("search"), ["q", "--limit", "x"])).toThrow(/expects a number/);
     expect(() => parseCommandArgs(cmd("search"), ["q", "extra"])).toThrow(/unexpected argument/);
@@ -82,7 +83,7 @@ describe("parseCommandArgs", () => {
 describe("usage", () => {
   it("renders from the schema", () => {
     expect(kebab("sourceType")).toBe("source-type");
-    expect(usage(cmd("jobs run"))).toBe("jobs run <verify|decay|backfill>");
+    expect(usage(cmd("jobs run"))).toBe("jobs run <decay|backfill>");
     expect(usage(cmd("knowledge refresh"))).toBe("knowledge refresh <id>");
     expect(usage(cmd("knowledge visibility"))).toBe("knowledge visibility <id> <public|private>");
     expect(usage(cmd("ask"))).not.toContain("--live");

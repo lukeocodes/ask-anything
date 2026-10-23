@@ -96,8 +96,3 @@ never learns the vendor.
   indexed yet answers nothing, which is honest.
 - Core has no policy knob per adapter. Registering one is the trust
   decision; everything else about a source is the adapter's business.
-
-## Known gaps
-
-- The contract in code still has `trust` and `verify`, and the engine still
-  has a verify tick. See [0010](0010-refresh-is-a-proposal.md), Known gaps.
