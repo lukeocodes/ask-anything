@@ -59,3 +59,10 @@ whose own schedule (or `INDEX_DEFAULT_SCHEDULE`) is due; `ask sources index
 - The API host needs `git`. The Docker image installs it.
 - `ask sources remove <id>` deletes the row; `--purge` also deletes its
   records. Without `--purge` the records stay, lose their owner, and decay.
+
+## Known gaps
+
+- `looksLikeGit` in `packages/sources/src/git-public.ts` and the `sources add`
+  help in `apps/cli/src/commands/registry.ts` accept ssh and `git@` locators.
+  An ssh clone always authenticates, so a public repository given that way
+  fails with the public-only message unless the host happens to hold a key.
