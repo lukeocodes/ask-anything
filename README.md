@@ -1,10 +1,10 @@
 # ask-anything
 
-A retrieval engine that refuses to guess. Register git repos and URLs, public
-or private. Every file is indexed into a chunk tree that follows the
-document's own headings. Hybrid recall over Postgres, a cross-encoder rerank
-as the gate, grounded and cited answers, and an index refreshed on a
-schedule, on demand, or one record at a time.
+A retrieval engine that refuses to guess. Register public git repos and
+URLs. Every file is indexed into a chunk tree that follows the document's
+own headings. Hybrid recall over Postgres, a cross-encoder rerank as the
+gate, grounded and cited answers, and an index refreshed on a schedule, on
+demand, or one record at a time.
 
 ```bash
 ask sources add https://github.com/you/your-repo
