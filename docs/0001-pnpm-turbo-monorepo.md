@@ -32,3 +32,11 @@ needs a database and provider keys, so it is not in CI.
 - One lockfile, one install, cross-package changes in one commit.
 - Dev dependencies ship in the production image because `tsx` is one.
 - `pnpm/action-setup` must not set `version:` alongside `packageManager`.
+
+## Known gaps
+
+- `turbo run typecheck` is per package, and `scripts/` and `eval/` are not
+  packages, so nothing type-checks them. `scripts/probe-ask.ts`,
+  `scripts/warm-cache.ts` and `eval/run.ts` are run by `tsx` and checked by no
+  CI step. There is no root `tsconfig.json` and the root has no `@ask/*`
+  dependency, so a root-level check would not resolve their imports as written.
