@@ -59,3 +59,9 @@ events cascade with the row.
 - The Decision says "the verify tick selects `active` and `stale` items
   alike". There is no verify tick ([0010](0010-refresh-is-a-proposal.md));
   only scheduled indexing re-reads stale items.
+- Consequences says an index run stamps `lastVerifiedAt` on every unchanged
+  item, so source-owned items decay only when indexing stops. A run the
+  commit or page-hash gate skips returns before reading any record
+  (`index` in `packages/sources/src/git-public.ts` and
+  `packages/sources/src/website.ts`), so nothing is stamped. A repo whose
+  `HEAD` does not move goes `stale` while it is still indexed on schedule.
