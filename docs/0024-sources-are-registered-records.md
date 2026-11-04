@@ -45,6 +45,14 @@ and files over `INDEX_MAX_FILE_KB`, ingest each text file through the
 content-hash gate. Every text file is indexed, not only Markdown. Chunking
 is [0025](0025-chunks-are-a-tree.md).
 
+The gate only moves when the run settled every record. A run with a failed
+ingest, or with a source proposal that waited behind a human one
+([0010](0010-refresh-is-a-proposal.md)), keeps the old `lastCommit`. The
+next run reads the source again, so a skipped run never stamps a body it
+did not confirm ([0009](0009-decay-not-deletion.md)). Deleting a record,
+by pruning or by an approved removal, invalidates every cached answer that
+cited it.
+
 Three ways to run it: the scheduler ticks `INDEX_CRON` and runs sources
 whose own schedule (or `INDEX_DEFAULT_SCHEDULE`) is due; `ask sources index
 <id> [--force]` runs one now, `--force` ignoring the commit and hash gates;

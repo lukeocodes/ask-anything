@@ -80,7 +80,9 @@ edited and the baseline moves to the rejected upstream hash, so the index
 proposes again only when upstream moves again. A newer source proposal
 replaces a pending source proposal on the same record and leaves the
 baseline alone until one is decided. It never replaces a pending human
-proposal; it waits for the next index run.
+proposal; it waits, and the run leaves the source's commit or page hash
+where it was ([0024](0024-sources-are-registered-records.md)) so the next
+run reads the source again instead of skipping it.
 
 The indexer finds records by `sourceRef` whatever their origin, so it never
 creates a second record for a file an edited record links to, and pruning

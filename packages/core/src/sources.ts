@@ -16,6 +16,7 @@ import {
 } from "@ask/db";
 import { CronExpressionParser } from "cron-parser";
 import { EDITED_ORIGIN, SOURCE_ORIGIN, baselineOf, editedAction, isEdited, reattachedMetadata } from "./edits.js";
+import { invalidateAnswerCacheForItems } from "./cache.js";
 import { getItem, hashBody, refreshCanonical } from "./knowledge.js";
 import { proposeFromSource, withdrawSourceProposals } from "./proposals.js";
 import {
@@ -262,7 +263,7 @@ export async function deleteSource(
  * gets a removal proposal instead (ADR-0009, ADR-0010). A no-op when
  * keepRefs is empty: an index that saw nothing never wipes a source.
  */
-export async function pruneSourceItems(sourceId: string, keepRefs: string[]): Promise<number> {
+export async function pruneSourceItems(sourceId: string, keepRefs: string[], run?: RunTally): Promise<number> {
   if (keepRefs.length === 0) return 0;
   const log = logger("sources");
   const rows = await db()
@@ -278,6 +279,8 @@ export async function pruneSourceItems(sourceId: string, keepRefs: string[]): Pr
   for (const r of rows) {
     log.info({ itemId: r.id, sourceRef: r.sourceRef, sourceId, reason: "vanished_upstream" }, "pruned source item");
   }
+  // A cached answer citing a pruned record must not outlive it.
+  await invalidateAnswerCacheForItems(rows.map((r) => r.id));
 
   const edited = await db()
     .select()
@@ -289,13 +292,15 @@ export async function pruneSourceItems(sourceId: string, keepRefs: string[]): Pr
         notInArray(knowledgeItems.sourceRef, keepRefs),
       ),
     );
-  for (const item of edited) await proposeRemoval(item, sourceId);
+  for (const item of edited) {
+    if (!(await proposeRemoval(item, sourceId)) && run) run.deferred += 1;
+  }
 
   return rows.length;
 }
 
 /** An edited record whose file or page is gone: propose, never delete (ADR-0009). */
-async function proposeRemoval(item: KnowledgeItem, sourceId: string): Promise<void> {
+async function proposeRemoval(item: KnowledgeItem, sourceId: string): Promise<boolean> {
   const proposal = await proposeFromSource(item, sourceId, {
     diff: { action: "remove" },
     evidence: [{ note: `${item.sourceRef ?? item.id} is gone upstream` }],
@@ -304,10 +309,12 @@ async function proposeRemoval(item: KnowledgeItem, sourceId: string): Promise<vo
     { itemId: item.id, sourceRef: item.sourceRef, sourceId, proposalId: proposal?.id, waited: !proposal },
     "edited source item gone upstream; removal proposed",
   );
+  return proposal !== undefined;
 }
 
 /** Delete one source-owned record (its backing file / page is gone). */
 export async function removeSourceItem(itemId: string): Promise<boolean> {
+  await invalidateAnswerCacheForItems([itemId]);
   const rows = await db().delete(knowledgeItems).where(eq(knowledgeItems.id, itemId)).returning({ id: knowledgeItems.id });
   return rows.length > 0;
 }
@@ -320,6 +327,7 @@ export async function removeSourceItem(itemId: string): Promise<boolean> {
  */
 export async function refreshSourceRecord(
   input: IngestInput & { sourceRef: string },
+  run?: RunTally,
 ): Promise<{ created: boolean; changed: boolean }> {
   const r = await refreshCanonical(input);
   if (!r.edited) return { created: r.created, changed: r.changed };
@@ -343,12 +351,13 @@ export async function refreshSourceRecord(
     const sourceId = input.sourceId ?? item.sourceId;
     if (sourceId) {
       const url = (input.metadata as { url?: string } | undefined)?.url;
-      await proposeFromSource(item, sourceId, {
+      const proposal = await proposeFromSource(item, sourceId, {
         proposedTitle: input.title,
         proposedBody: input.body,
         diff: { upstreamHash, baselineHash: baselineOf(item) ?? null },
         evidence: [{ ...(url ? { url } : {}), note: "upstream changed since the approved edit" }],
       });
+      if (!proposal && run) run.deferred += 1;
     }
   }
   return { created: false, changed: false };
@@ -388,6 +397,35 @@ export const dbPersistence: SourcePersistence = {
   },
   registerSource: createSource,
 };
+
+/** What one index run could not settle. Kept per run, never stored. */
+export interface RunTally {
+  deferred: number;
+}
+
+/** `dbPersistence` for one index run: counts deferred source proposals. */
+export function runPersistence(run: RunTally): SourcePersistence {
+  return {
+    ...dbPersistence,
+    refresh: (input) => refreshSourceRecord(input, run),
+    prune: (sourceId, keepRefs) => pruneSourceItems(sourceId, keepRefs, run),
+  };
+}
+
+/**
+ * The commit / page hash to save after a run (ADR-0024 gate, ADR-0009).
+ * The gate only moves when every record was settled: a failed ingest or a
+ * deferred source proposal keeps the old value, so the next run reads the
+ * source again instead of skipping it and stamping what it never confirmed.
+ */
+export function gateCommit(
+  previous: string | null | undefined,
+  next: string | null,
+  counts: { failed?: number; deferred?: number },
+): string | null {
+  if ((counts.failed ?? 0) > 0 || (counts.deferred ?? 0) > 0) return previous ?? null;
+  return next;
+}
 
 /** Number of records currently attached to a source. */
 export async function countSourceItems(sourceId: string): Promise<number> {
@@ -566,7 +604,8 @@ async function indexLoadedSource(source: KnowledgeSource, opts: IndexSourceOptio
   if (source.status === "indexing") throw new SourceBusyError(source.id);
   const force = opts.force ?? false;
   const adapter = adapterFor(source.kind);
-  const ctx = adapterContext(source, opts.context);
+  const run: RunTally = { deferred: 0 };
+  const ctx = adapterContext(source, { persistence: runPersistence(run), ...opts.context });
 
   await markIndexing(source.id);
   try {
@@ -579,6 +618,7 @@ async function indexLoadedSource(source: KnowledgeSource, opts: IndexSourceOptio
       pruned: r.pruned,
       seen: r.seen ?? r.created + r.changed + r.unchanged,
       failed: r.failed ?? 0,
+      deferred: run.deferred,
       lastCommit: r.lastCommit ?? null,
       sourceId: source.id,
       kind: source.kind,
@@ -586,7 +626,7 @@ async function indexLoadedSource(source: KnowledgeSource, opts: IndexSourceOptio
     };
     if (result.skipped) await stampSourceItems(source.id);
     await markIdle(source.id, {
-      lastCommit: result.lastCommit,
+      lastCommit: gateCommit(source.lastCommit, result.lastCommit ?? null, result),
       ...(result.skipped ? {} : { itemCount: result.seen }),
     });
     await recordUsage({
@@ -600,6 +640,7 @@ async function indexLoadedSource(source: KnowledgeSource, opts: IndexSourceOptio
         unchanged: result.unchanged,
         pruned: result.pruned,
         failed: result.failed,
+        deferred: result.deferred,
         forced: force,
       },
     });

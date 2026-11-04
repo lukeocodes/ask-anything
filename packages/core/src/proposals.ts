@@ -20,6 +20,7 @@ import {
   reattachedMetadata,
   sourceProposer,
 } from "./edits.js";
+import { invalidateAnswerCacheForItems } from "./cache.js";
 import { applyRevision, getItem } from "./knowledge.js";
 import { recordUsage } from "./telemetry.js";
 
@@ -233,6 +234,8 @@ export async function approveProposal(
 
   if (isSourceProposal(proposal) && isRemovalProposal(proposal)) {
     await markApplied();
+    // A cached answer citing the record must not outlive it.
+    await invalidateAnswerCacheForItems([before.id]);
     // The proposal row cascades with the item; the log line is the record.
     await db().delete(knowledgeItems).where(eq(knowledgeItems.id, before.id));
     logger("proposals").info(
