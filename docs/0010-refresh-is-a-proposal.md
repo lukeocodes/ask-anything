@@ -53,6 +53,39 @@ There is no review cron. A source whose changes should be seen by a human
 before they land is not an adapter. It is a tool outside the engine that
 watches the thing and proposes.
 
+**An approved edit detaches a source-owned record.** When a proposal on a
+record with `metadata.origin = "source"` is approved, the record becomes
+`metadata.origin = "edited"` and keeps a link back to where it came from:
+the source id, the `sourceRef`, and the baseline, which is its
+`contentHash` from just before the edit (the hash of the upstream body).
+Index updates to that record pause. A human change outranks upstream until
+upstream changes.
+
+Every index run that reads the record's file or page compares the upstream
+hash with the baseline:
+
+- Same as the baseline: nothing happens. Upstream has not moved, the edit
+  stands.
+- Different, and equal to the edited body's `contentHash`: upstream caught
+  up. The record goes back to `origin = "source"` with no approval.
+- Different otherwise: the index run writes a source proposal (`proposedBy`
+  is the source) carrying the new upstream body.
+- The file or page is gone upstream: the index run proposes removal. Nothing
+  is deleted without approval.
+
+A source proposal follows the normal approve/reject path, with two extra
+rules. Approved: the record takes the upstream body and goes back to
+`origin = "source"`, so index updates resume. Rejected: the record stays
+edited and the baseline moves to the rejected upstream hash, so the index
+proposes again only when upstream moves again. A newer source proposal
+replaces a pending source proposal on the same record and leaves the
+baseline alone until one is decided. It never replaces a pending human
+proposal; it waits for the next index run.
+
+The indexer finds records by `sourceRef` whatever their origin, so it never
+creates a second record for a file an edited record links to, and pruning
+only deletes `origin = "source"` records.
+
 ## Consequences
 
 - Hand-curated and cited knowledge changes only with a human approval.
@@ -63,12 +96,21 @@ watches the thing and proposes.
   lives outside the engine with its own credentials and its own vendor SDK.
 - The engine cannot tell a good proposer from a bad one. The key's write
   scope is the only gate; the approver is the review.
-- An approved edit to a source-owned record lasts until the next index run,
-  which restores upstream.
+- An approved edit to a source-owned record lasts until upstream changes.
+  Then a human decides again. A record has one owner at a time, and the link
+  back to its source means there is never a duplicate.
+- Edited records are not stamped by index runs, so they decay
+  ([0009](0009-decay-not-deletion.md)) and surface as `stale` for a human.
 
 ## Known gaps
 
-Built.
+The proposals path is built. Detaching edited records is not:
+
+- Approving a proposal on a source-owned record leaves
+  `metadata.origin = "source"` (`applyRevision` in
+  `packages/core/src/knowledge.ts`), so the next index run that sees a
+  changed file overwrites the edit. There is no `edited` origin, no
+  baseline, no source proposal, no re-attach, and no proposed removal.
 
 - Built: `proposeUpdate` (one pending per record), `listPendingProposals`,
   `approveProposal` via `applyRevision`, `rejectProposal`

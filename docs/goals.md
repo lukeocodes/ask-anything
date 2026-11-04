@@ -12,8 +12,10 @@ from the top of the queue and never from the second list.
 
 A goal is done when the Known gaps line it points at is gone from the ADR.
 
-1. Stale as a queue: scheduled indexing and on-demand refresh take `stale`
-   records first. ADR-0009, Known gaps.
+1. Index runs keep source-owned records verified, and approved edits detach
+   them: gated runs stamp `lastVerifiedAt`, edited records get a baseline,
+   source proposals, re-attach and proposed removal. ADR-0009 and ADR-0010,
+   Known gaps.
 2. The gap ledger clusters paraphrases through the `questions` table instead
    of recording each as its own gap. ADR-0022, Known gaps.
 3. Grow `eval/golden.jsonl` past three cases, from the two shipped adapters'
