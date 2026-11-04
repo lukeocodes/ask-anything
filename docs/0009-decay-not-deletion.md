@@ -66,7 +66,4 @@ events cascade with the row.
 
 ## Known gaps
 
-- A run the commit or page-hash gate skips returns before reading any
-  record (`index` in `packages/sources/src/git-public.ts` and
-  `packages/sources/src/website.ts`), so nothing is stamped. A repo whose
-  `HEAD` does not move goes `stale` while it is still indexed on schedule.
+None.

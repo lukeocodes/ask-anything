@@ -104,14 +104,12 @@ only deletes `origin = "source"` records.
 
 ## Known gaps
 
-The proposals path is built. Detaching edited records is not:
-
-- Approving a proposal on a source-owned record leaves
-  `metadata.origin = "source"` (`applyRevision` in
-  `packages/core/src/knowledge.ts`), so the next index run that sees a
-  changed file overwrites the edit. There is no `edited` origin, no
-  baseline, no source proposal, no re-attach, and no proposed removal.
-
+- Rejecting a source removal proposal changes nothing on the record
+  (`rejectProposal` in `packages/core/src/proposals.ts`). The file is still
+  gone, so the next index run proposes removal again
+  (`pruneSourceItems` in `packages/core/src/sources.ts`). The Decision moves
+  the baseline on a rejected update but does not say what a rejected
+  removal records.
 - Built: `proposeUpdate` (one pending per record), `listPendingProposals`,
   `approveProposal` via `applyRevision`, `rejectProposal`
   (`packages/core/src/proposals.ts`); `POST /v1/knowledge/:id/proposals`
@@ -120,7 +118,10 @@ The proposals path is built. Detaching edited records is not:
   `POST /v1/proposals/:id/approve|reject` recording the key label as
   `decidedBy` (`apps/api/src/routes/admin.ts`); `ask proposals
   create|list|approve|reject` and their management MCP tools; the
-  `update_proposals` table with `proposed_by`.
+  `update_proposals` table with `proposed_by`. Detaching: `edited` origin
+  and `baselineHash`, hold / re-attach / source proposal / proposed removal
+  on index runs, approve re-attaches, reject moves the baseline
+  (`packages/core/src/edits.ts`, `sources.ts`, `proposals.ts`).
 - One pending per record is a select then an insert in `proposeUpdate`
   (`packages/core/src/proposals.ts`), not a constraint. Two requests for
   the same record at the same moment can both insert.
