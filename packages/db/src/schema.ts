@@ -74,7 +74,9 @@ export const visibilityEnum = pgEnum("visibility", ["public", "private"]);
 /**
  * A registered source (ADR-0024): a git remote or a URL the engine clones /
  * fetches and indexes on a schedule, on demand, or one record at a time.
- * Records it produces carry source_id and metadata.origin = "source".
+ * Records it produces carry source_id and metadata.origin = "source". An
+ * approved edit turns one metadata.origin = "edited" with a
+ * metadata.baselineHash (ADR-0010).
  */
 export const knowledgeSources = pgTable(
   "knowledge_sources",
@@ -427,7 +429,10 @@ export const usageEvents = pgTable(
 /**
  * A proposed change to an EXISTING knowledge item, sent by any write-scope
  * key through `POST /v1/knowledge/:id/proposals` (ADR-0010). Registered
- * adapters never propose; they refresh in place. Proposals are listed for an
+ * adapters refresh source records in place. On an edited record an index run
+ * proposes instead: `proposed_by = "source:<sourceId>"`, `diff.upstreamHash`
+ * for a new upstream body, `diff.action = "remove"` when the file is gone.
+ * Proposals are listed for an
  * operator (via the CLI or management MCP) to approve before they touch the
  * knowledgebase.
  */
@@ -439,8 +444,8 @@ export const updateProposals = pgTable(
       .notNull()
       .references(() => knowledgeItems.id, { onDelete: "cascade" }),
     sourceType: text("source_type").notNull(),
-    // Label of the API key that sent the proposal (ADR-0010). Null for
-    // proposals the engine raised itself.
+    // Label of the API key that sent the proposal (ADR-0010), or
+    // `source:<sourceId>` when an index run raised it on an edited record.
     proposedBy: text("proposed_by"),
     proposedTitle: text("proposed_title"),
     proposedSummary: text("proposed_summary"),

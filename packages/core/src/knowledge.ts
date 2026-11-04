@@ -16,6 +16,7 @@ import {
 } from "@ask/db";
 import { invalidateAnswerCacheForItems } from "./cache.js";
 import { type ChunkNode, chunkDocument, chunkEmbeddingInput } from "./chunking.js";
+import { isEdited } from "./edits.js";
 import { emitEvent } from "./events.js";
 import { recordUsage } from "./telemetry.js";
 import type { IngestInput, KnownSourceType, Visibility } from "./types.js";
@@ -246,7 +247,7 @@ export async function deleteBySource(sourceType: string): Promise<number> {
 }
 
 /** Stable content fingerprint used to detect whether a refresh actually changed a body. */
-function hashBody(body: string): string {
+export function hashBody(body: string): string {
   return createHash("sha256").update(body.trim()).digest("hex");
 }
 
@@ -262,10 +263,12 @@ function hashBody(body: string): string {
  *                               recover stale→active, refresh metadata/tags. No re-embed.
  *  - existing, body changed   → re-embed + re-chunk, bump a revision, invalidate
  *                               cached answers; id + confidence + retrievalCount kept.
+ *  - existing, edited         → nothing is written; `edited: true` tells the
+ *                               caller to compare against the baseline (ADR-0010).
  */
 export async function refreshCanonical(
   input: IngestInput & { sourceRef: string },
-): Promise<{ item: KnowledgeItem; created: boolean; changed: boolean }> {
+): Promise<{ item: KnowledgeItem; created: boolean; changed: boolean; edited?: boolean }> {
   const [existing] = await db()
     .select()
     .from(knowledgeItems)
@@ -273,6 +276,8 @@ export async function refreshCanonical(
     .limit(1);
 
   if (!existing) return { item: await ingest(input), created: true, changed: true };
+  // A human edit outranks upstream until upstream changes (ADR-0010).
+  if (isEdited(existing)) return { item: existing, created: false, changed: false, edited: true };
 
   const now = new Date();
   const newHash = hashBody(input.body);

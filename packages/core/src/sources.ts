@@ -15,7 +15,9 @@ import {
   type NewKnowledgeSource,
 } from "@ask/db";
 import { CronExpressionParser } from "cron-parser";
-import { getItem, refreshCanonical } from "./knowledge.js";
+import { EDITED_ORIGIN, SOURCE_ORIGIN, baselineOf, editedAction, isEdited, reattachedMetadata } from "./edits.js";
+import { getItem, hashBody, refreshCanonical } from "./knowledge.js";
+import { proposeFromSource } from "./proposals.js";
 import {
   SourceBusyError,
   adapterFor,
@@ -36,6 +38,8 @@ import type { IngestInput, Visibility } from "./types.js";
  * `sourceId`, `sourceType` = the adapter kind, `sourceRef`
  * `<sourceId>:<path|url>` and `metadata.origin = "source"` — the source owns
  * them: refreshed in place, never by proposal, pruned when the file vanishes.
+ * An approved edit turns a record `edited` (ADR-0010, `edits.ts`): index runs
+ * then compare it with its baseline and propose instead of writing.
  *
  * CRUD, status transitions, scheduling and the `ingest` usage event live
  * here; everything that touches the upstream is the adapter's.
@@ -45,8 +49,7 @@ export type SourceKind = KnowledgeSource["kind"];
 export type SourceProvider = KnowledgeSource["provider"];
 export type SourceCrawl = NonNullable<KnowledgeSource["crawl"]>;
 
-/** `metadata.origin` stamped on every record a registered source produces. */
-export const SOURCE_ORIGIN = "source";
+export { EDITED_ORIGIN, SOURCE_ORIGIN };
 
 /** True when the item is owned by a registered source (see SOURCE_ORIGIN). */
 export function isSourceOwned(item: { metadata: Record<string, unknown> | null }): boolean {
@@ -241,7 +244,7 @@ export async function deleteSource(
       .update(knowledgeItems)
       .set({
         sourceId: null,
-        metadata: sql`coalesce(${knowledgeItems.metadata}, '{}'::jsonb) - 'origin' - 'sourceId'`,
+        metadata: sql`coalesce(${knowledgeItems.metadata}, '{}'::jsonb) - 'origin' - 'sourceId' - 'baselineHash'`,
         updatedAt: new Date(),
       })
       .where(eq(knowledgeItems.sourceId, id));
@@ -253,8 +256,9 @@ export async function deleteSource(
 /**
  * Delete this source's records whose sourceRef is not in `keepRefs` — the
  * files that vanished upstream since the last index. Only source-owned rows
- * (`metadata.origin = "source"`) qualify. A no-op when keepRefs is empty: an
- * index that saw nothing never wipes a source.
+ * (`metadata.origin = "source"`) are deleted. An edited row that vanished
+ * gets a removal proposal instead (ADR-0009, ADR-0010). A no-op when
+ * keepRefs is empty: an index that saw nothing never wipes a source.
  */
 export async function pruneSourceItems(sourceId: string, keepRefs: string[]): Promise<number> {
   if (keepRefs.length === 0) return 0;
@@ -272,7 +276,32 @@ export async function pruneSourceItems(sourceId: string, keepRefs: string[]): Pr
   for (const r of rows) {
     log.info({ itemId: r.id, sourceRef: r.sourceRef, sourceId, reason: "vanished_upstream" }, "pruned source item");
   }
+
+  const edited = await db()
+    .select()
+    .from(knowledgeItems)
+    .where(
+      and(
+        eq(knowledgeItems.sourceId, sourceId),
+        sql`${knowledgeItems.metadata} ->> 'origin' = ${EDITED_ORIGIN}`,
+        notInArray(knowledgeItems.sourceRef, keepRefs),
+      ),
+    );
+  for (const item of edited) await proposeRemoval(item, sourceId);
+
   return rows.length;
+}
+
+/** An edited record whose file or page is gone: propose, never delete (ADR-0009). */
+async function proposeRemoval(item: KnowledgeItem, sourceId: string): Promise<void> {
+  const proposal = await proposeFromSource(item, sourceId, {
+    diff: { action: "remove" },
+    evidence: [{ note: `${item.sourceRef ?? item.id} is gone upstream` }],
+  });
+  logger("sources").info(
+    { itemId: item.id, sourceRef: item.sourceRef, sourceId, proposalId: proposal?.id, waited: !proposal },
+    "edited source item gone upstream; removal proposed",
+  );
 }
 
 /** Delete one source-owned record (its backing file / page is gone). */
@@ -281,11 +310,76 @@ export async function removeSourceItem(itemId: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+/**
+ * The index-run write for one record. Source records go through
+ * `refreshCanonical`. An edited record is compared with its baseline
+ * (ADR-0010): hold, re-attach when upstream caught up with the edit, or
+ * propose the new upstream body. An edited record's body is never written.
+ */
+export async function refreshSourceRecord(
+  input: IngestInput & { sourceRef: string },
+): Promise<{ created: boolean; changed: boolean }> {
+  const r = await refreshCanonical(input);
+  if (!r.edited) return { created: r.created, changed: r.changed };
+
+  const item = r.item;
+  const upstreamHash = hashBody(input.body);
+  const editedHash = (item.metadata as { contentHash?: string } | null)?.contentHash;
+  const action = editedAction(baselineOf(item), editedHash, upstreamHash);
+
+  if (action === "reattach") {
+    await db().update(knowledgeItems).set({ metadata: reattachedMetadata(item.metadata) }).where(eq(knowledgeItems.id, item.id));
+    // Now a plain source record with an equal hash: this stamps it.
+    const again = await refreshCanonical(input);
+    logger("sources").info({ itemId: item.id, sourceRef: input.sourceRef }, "upstream caught up with edit; re-attached");
+    return { created: again.created, changed: again.changed };
+  }
+
+  if (action === "propose") {
+    const sourceId = input.sourceId ?? item.sourceId;
+    if (sourceId) {
+      const url = (input.metadata as { url?: string } | undefined)?.url;
+      await proposeFromSource(item, sourceId, {
+        proposedTitle: input.title,
+        proposedBody: input.body,
+        diff: { upstreamHash, baselineHash: baselineOf(item) ?? null },
+        evidence: [{ ...(url ? { url } : {}), note: "upstream changed since the approved edit" }],
+      });
+    }
+  }
+  return { created: false, changed: false };
+}
+
+/**
+ * A run the commit or page-hash gate skipped is still a real upstream
+ * check (ADR-0009): stamp every source-owned record of the source and bring
+ * stale ones back. Edited records are not stamped.
+ */
+export async function stampSourceItems(sourceId: string, now: Date = new Date()): Promise<number> {
+  const rows = await db()
+    .update(knowledgeItems)
+    .set({
+      lastVerifiedAt: now,
+      updatedAt: now,
+      status: sql`case when ${knowledgeItems.status} = 'stale' then 'active'::knowledge_status else ${knowledgeItems.status} end`,
+    })
+    .where(and(eq(knowledgeItems.sourceId, sourceId), sql`${knowledgeItems.metadata} ->> 'origin' = ${SOURCE_ORIGIN}`))
+    .returning({ id: knowledgeItems.id });
+  return rows.length;
+}
+
 /** The DB-backed persistence seam handed to adapters. */
 export const dbPersistence: SourcePersistence = {
-  refresh: (input) => refreshCanonical(input).then((r) => ({ created: r.created, changed: r.changed })),
+  refresh: refreshSourceRecord,
   prune: pruneSourceItems,
   remove: async (itemId) => {
+    const item = await getItem(itemId);
+    if (!item) return;
+    const sourceId = item.sourceId;
+    if (isEdited(item) && sourceId) {
+      await proposeRemoval(item, sourceId);
+      return;
+    }
     await removeSourceItem(itemId);
   },
   registerSource: createSource,
@@ -486,6 +580,7 @@ async function indexLoadedSource(source: KnowledgeSource, opts: IndexSourceOptio
       kind: source.kind,
       forced: force,
     };
+    if (result.skipped) await stampSourceItems(source.id);
     await markIdle(source.id, {
       lastCommit: result.lastCommit,
       ...(result.skipped ? {} : { itemCount: result.seen }),
