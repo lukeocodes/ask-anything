@@ -17,7 +17,7 @@ import {
 import { CronExpressionParser } from "cron-parser";
 import { EDITED_ORIGIN, SOURCE_ORIGIN, baselineOf, editedAction, isEdited, reattachedMetadata } from "./edits.js";
 import { getItem, hashBody, refreshCanonical } from "./knowledge.js";
-import { proposeFromSource } from "./proposals.js";
+import { proposeFromSource, withdrawSourceProposals } from "./proposals.js";
 import {
   SourceBusyError,
   adapterFor,
@@ -248,6 +248,8 @@ export async function deleteSource(
         updatedAt: new Date(),
       })
       .where(eq(knowledgeItems.sourceId, id));
+    // Detached records are hand-curated now; the source's proposals go with it.
+    await withdrawSourceProposals({ sourceId: id });
   }
   const rows = await db().delete(knowledgeSources).where(eq(knowledgeSources.id, id)).returning({ id: knowledgeSources.id });
   return { deleted: rows.length > 0, purged };
@@ -326,6 +328,8 @@ export async function refreshSourceRecord(
   const upstreamHash = hashBody(input.body);
   const editedHash = (item.metadata as { contentHash?: string } | null)?.contentHash;
   const action = editedAction(baselineOf(item), editedHash, upstreamHash);
+
+  if (action !== "propose") await withdrawSourceProposals({ itemId: item.id });
 
   if (action === "reattach") {
     await db().update(knowledgeItems).set({ metadata: reattachedMetadata(item.metadata) }).where(eq(knowledgeItems.id, item.id));

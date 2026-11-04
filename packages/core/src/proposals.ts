@@ -5,11 +5,13 @@ import {
   desc,
   eq,
   knowledgeItems,
+  sql,
   updateProposals,
   type KnowledgeItem,
   type UpdateProposal,
 } from "@ask/db";
 import {
+  SOURCE_PROPOSER_PREFIX,
   isEdited,
   isRemovalProposal,
   isSourceProposal,
@@ -134,6 +136,25 @@ export async function proposeFromSource(
     metadata: { proposalId: proposal.id, itemId: item.id, sourceType: item.sourceType, action: candidate.diff.action ?? "update" },
   });
   return proposal;
+}
+
+/**
+ * Close pending source proposals on a record whose reason is gone: upstream
+ * went back to the baseline, caught up with the edit, or the source was
+ * deleted. Marked rejected by the source itself; the baseline does not move.
+ * Pass `sourceId` alone to close every pending proposal that source raised.
+ */
+export async function withdrawSourceProposals(target: { itemId: string } | { sourceId: string }): Promise<number> {
+  const scope =
+    "itemId" in target
+      ? and(eq(updateProposals.itemId, target.itemId), sql`${updateProposals.proposedBy} like ${`${SOURCE_PROPOSER_PREFIX}%`}`)
+      : eq(updateProposals.proposedBy, sourceProposer(target.sourceId));
+  const rows = await db()
+    .update(updateProposals)
+    .set({ status: "rejected", decidedBy: "itemId" in target ? "source" : "source deleted", decidedAt: new Date() })
+    .where(and(eq(updateProposals.status, "pending"), scope))
+    .returning({ id: updateProposals.id });
+  return rows.length;
 }
 
 export async function listPendingProposals(limit = 50): Promise<UpdateProposal[]> {

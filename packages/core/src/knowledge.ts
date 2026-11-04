@@ -16,7 +16,7 @@ import {
 } from "@ask/db";
 import { invalidateAnswerCacheForItems } from "./cache.js";
 import { type ChunkNode, chunkDocument, chunkEmbeddingInput } from "./chunking.js";
-import { isEdited } from "./edits.js";
+import { EDITED_ORIGIN, isEdited } from "./edits.js";
 import { emitEvent } from "./events.js";
 import { recordUsage } from "./telemetry.js";
 import type { IngestInput, KnownSourceType, Visibility } from "./types.js";
@@ -280,6 +280,12 @@ export async function refreshCanonical(
   if (isEdited(existing)) return { item: existing, created: false, changed: false, edited: true };
 
   const now = new Date();
+  // The row is matched again on not-edited, so an edit approved while this
+  // run was reading upstream is never overwritten (ADR-0010).
+  const notEdited = and(
+    eq(knowledgeItems.id, existing.id),
+    sql`${knowledgeItems.metadata} ->> 'origin' is distinct from ${EDITED_ORIGIN}`,
+  );
   const newHash = hashBody(input.body);
   const oldHash = (existing.metadata as Record<string, unknown> | null)?.contentHash;
   const metadata = { ...(input.metadata ?? {}), ...(input.format ? { format: input.format } : {}), contentHash: newHash };
@@ -298,9 +304,10 @@ export async function refreshCanonical(
         title: input.title ?? existing.title,
         summary: input.summary ?? existing.summary,
       })
-      .where(eq(knowledgeItems.id, existing.id))
+      .where(notEdited)
       .returning();
-    return { item: item!, created: false, changed: false };
+    if (!item) return { item: existing, created: false, changed: false };
+    return { item, created: false, changed: false };
   }
 
   // Content changed: re-embed + re-chunk, keep the same row (and its confidence /
@@ -324,9 +331,12 @@ export async function refreshCanonical(
       lastVerifiedAt: now,
       updatedAt: now,
     })
-    .where(eq(knowledgeItems.id, existing.id))
+    .where(notEdited)
     .returning();
-  if (!item) throw new Error("refreshCanonical: update returned no row");
+  if (!item) {
+    logger("knowledge").info({ itemId: existing.id }, "record was edited during the refresh; upstream not written");
+    return { item: existing, created: false, changed: false };
+  }
 
   await writeChunks(existing.id, chunks, vectors, { replace: true });
   await invalidateAnswerCacheForItems([existing.id]).catch(() => {});
