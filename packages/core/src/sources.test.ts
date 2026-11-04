@@ -12,6 +12,7 @@ import {
   SOURCE_ORIGIN,
   assertCron,
   formatForPath,
+  gateCommit,
   isDue,
   isSourceOwned,
   parseLocator,
@@ -169,5 +170,25 @@ describe("source records", () => {
     expect(formatForPath("a.markdown")).toBe("markdown");
     expect(formatForPath("src/index.ts")).toBe("text");
     expect(formatForPath("Makefile")).toBe("text");
+  });
+});
+
+describe("gateCommit", () => {
+  it("moves the gate when every record was settled", () => {
+    expect(gateCommit("old", "new", { failed: 0, deferred: 0 })).toBe("new");
+    expect(gateCommit(null, "new", {})).toBe("new");
+  });
+
+  it("keeps the old value after a failed ingest, so the next run reads again", () => {
+    expect(gateCommit("old", "new", { failed: 1 })).toBe("old");
+  });
+
+  it("keeps the old value when a source proposal waited", () => {
+    expect(gateCommit("old", "new", { deferred: 2 })).toBe("old");
+  });
+
+  it("falls back to no gate when there was none before", () => {
+    expect(gateCommit(undefined, "new", { failed: 1 })).toBeNull();
+    expect(gateCommit(null, "new", { deferred: 1 })).toBeNull();
   });
 });

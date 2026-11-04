@@ -25,7 +25,8 @@ Every decision that shapes this codebase has an ADR in `docs/`, numbered
   ADR in place so it reads as the decision, then change the code to match,
   same commit, same number. After the first release, write a new ADR that
   supersedes it and flip the old one's status to `Superseded by [NNNN](...)`.
-  The maintainer says which stage the repo is in; do not infer it.
+  The maintainer says which stage the repo is in; do not infer it. Current
+  stage: pre-release (maintainer, 2026-11-04).
 - If no ADR covers it and the change is a decision (something a future reader
   would ask "why" about), write one first. Same commit.
 - If no ADR covers it and it is not a decision (a typo, a bug fix inside the

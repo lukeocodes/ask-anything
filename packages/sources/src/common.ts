@@ -3,7 +3,7 @@ import type { IndexResult } from "@ask/core";
 
 /** A fresh, zeroed counter set for one index run. */
 export function emptyResult(): Required<Omit<IndexResult, "lastCommit">> & { lastCommit: string | null } {
-  return { skipped: false, created: 0, changed: 0, unchanged: 0, pruned: 0, seen: 0, failed: 0, lastCommit: null };
+  return { skipped: false, created: 0, changed: 0, unchanged: 0, pruned: 0, seen: 0, failed: 0, deferred: 0, lastCommit: null };
 }
 
 export type Counters = ReturnType<typeof emptyResult>;

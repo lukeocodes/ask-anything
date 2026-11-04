@@ -70,6 +70,12 @@ export interface IndexResult {
   seen?: number;
   /** Records whose ingest threw (logged; the run continues). */
   failed?: number;
+  /**
+   * Edited records whose source proposal waited behind a pending human
+   * proposal (ADR-0010). Like `failed`, any of these keeps the gate where it
+   * was so the next run reads the source again.
+   */
+  deferred?: number;
   /** git: HEAD sha. url: content hash of the page / sitemap. Stored as `lastCommit`. */
   lastCommit?: string | null;
 }

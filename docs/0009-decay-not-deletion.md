@@ -25,7 +25,16 @@ effective = baseConfidence * exp(-lambdaEff * ageDays)
 
 `DECAY_CRON` (nightly) runs `runDecay`, which flips items below
 `STALE_THRESHOLD` to `stale` and writes a `decay_events` row. Nothing else
-happens on flip; the verify tick selects `active` and `stale` items alike.
+happens on flip. `stale` is a label, not a queue: nothing re-reads stale
+items first.
+
+A source-owned item does not go stale while its source is indexed. Every
+index run stamps `lastVerifiedAt` on every source-owned item it confirms
+unchanged, and that includes a run the commit or page-hash gate skips
+([0024](0024-sources-are-registered-records.md)). An unchanged `HEAD` or page
+hash is a real upstream comparison: every file is the same. Edited items
+([0010](0010-refresh-is-a-proposal.md)) are not stamped by an index run. They
+decay like any hand-curated record, and `stale` on one tells a human to look.
 
 What moves the numbers:
 
@@ -38,7 +47,9 @@ What moves the numbers:
 
 Deletion happens in one place: `pruneSourceItems()` after a source index
 run, for source-owned items (`metadata.origin = "source"`) whose file or
-page vanished upstream.
+page vanished upstream. An edited item whose file or page vanished is not
+deleted. The index run proposes its removal instead
+([0010](0010-refresh-is-a-proposal.md)).
 Each deletion is logged with id, ref, and reason. Revisions, chunks, and decay
 events cascade with the row.
 
@@ -48,14 +59,11 @@ events cascade with the row.
 - Feedback survives refresh because it lives on the item row, not the body.
 - `GET /v1/admin/knowledge-stats` exposes stale counts and age per source.
 
-- A source index run stamps `lastVerifiedAt` on every unchanged item. That
-  is a real upstream comparison, so source-owned items decay only when their
-  source stops being indexed. Intended.
+- Source-owned items decay only when their source stops being indexed.
+  Intended.
+- `stale` on an indexed source points at edited items, which is where a
+  human is needed.
 
 ## Known gaps
 
-- `stale` is a label, not a queue. Scheduled indexing takes records in no
-  particular order, so stale items are no likelier to be checked first.
-- The Decision says "the verify tick selects `active` and `stale` items
-  alike". There is no verify tick ([0010](0010-refresh-is-a-proposal.md));
-  only scheduled indexing re-reads stale items.
+None.
