@@ -14,8 +14,6 @@ A goal is done when the Known gaps line it points at is gone from the ADR.
 
 1. The gap ledger clusters paraphrases through the `questions` table instead
    of recording each as its own gap. ADR-0022, Known gaps.
-2. Grow `eval/golden.jsonl` past three cases, from the two shipped adapters'
-   own docs so the set needs no private data. ADR-0001.
 
 ## Needs a decision first
 

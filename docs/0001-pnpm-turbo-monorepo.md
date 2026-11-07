@@ -40,3 +40,7 @@ needs a database and provider keys, so it is not in CI.
   `scripts/warm-cache.ts` and `eval/run.ts` are run by `tsx` and checked by no
   CI step. There is no root `tsconfig.json` and the root has no `@ask/*`
   dependency, so a root-level check would not resolve their imports as written.
+- `grade()` in `eval/run.ts` matches `contains` needles against the answer
+  and the cited record ids joined together. Ids are UUIDs, so a short numeric
+  needle (`512`, `500` in `eval/golden.jsonl`) can pass on a hex substring of
+  an id when the answer lacks it.
