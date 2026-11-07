@@ -77,56 +77,15 @@ Surfaces are `api`, `cli`, `mcp`, `backfill`, `warm`.
 ## Daily run
 
 A scheduler on the maintainer's machine runs an agent here once a day, one
-turn (ADR-0026). The scheduler config is not in this repo. The agent reads this section and
-`docs/goals.md`. Nothing below applies to a human.
+turn with a deadline (ADR-0026). The process is the `cao-dev-run` skill on
+that machine, which starts with the `cao-pr-inbox` skill. Neither the
+skills nor the scheduler config are in this repo. Nothing below applies to
+a human.
 
-**State is git and GitHub.** You remember nothing between turns. Start every
-turn the same way:
+Process: `cao-dev-run`. Settings:
 
-```bash
-gh pr list --repo lukeocodes/ask-anything --state open --label daily --json number,url,headRefName,isDraft,labels
-```
-
-- One open PR labelled `daily` without `needs-decision`: that is your work.
-  Check its branch out as a worktree under `.agents/worktrees/<branch>` and
-  read its body for the stage you are at.
-- None: take the first item in the Queue of `docs/goals.md`, branch
-  `daily/<short-slug>` from `main`, open a draft PR labelled `daily`, titled
-  as a Conventional Commit, with the stage checklist below, and start at
-  stage 1.
-- Only PRs labelled `needs-decision`: start the next goal that no open PR
-  covers. Never touch a `needs-decision` PR.
-
-**Stages.** The PR body is this checklist. Tick a box in the commit that
-completes it; keep the notes under each box current.
-
-```
-- [ ] 1 Ideation: the goal, the ADR line it closes, why it is next, what "done" is
-- [ ] 2 Plan: files, what could go wrong, how it is verified
-- [ ] 3 Build
-- [ ] 4 Verify: pnpm typecheck, pnpm test, CI green, pnpm eval if retrieval or answering changed
-- [ ] 5 Adversarial review: a fresh read of the whole diff against the ADR as a hostile reviewer; what it found, what was fixed
-- [ ] 6 Ready: ADR Known gaps and docs/goals.md updated, body final, marked ready, @lukeocodes mentioned
-```
-
-**Each turn.** Advance the PR by at least one stage, then housekeeping,
-always, before you stop: commit everything (Conventional Commits subject,
-`ADR-NNNN` lines, no trailers),
-push, make sure the draft PR exists and its body matches the branch, wait
-for CI. If stage 5 is ticked: remove the Known gaps lines the PR closes,
-update `docs/goals.md`, tick 6, `gh pr ready`, comment
-`@lukeocodes ready for review`. Otherwise leave it draft. Do not start
-stage 3 until stages 1 and 2 are in the body. Stop at a clean point: code
-compiles and tests pass, or the broken state is described in the body.
-
-**No decisions.** The Decision section of every ADR is read-only to you.
-You may remove a Known gaps line you fixed and add one you found, with the
-file. If the work needs a choice no ADR settles, the ADRs disagree with each
-other, or `docs/goals.md` asks for something an ADR forbids: stop, write the
-choice and the options in the PR body under `## Needs a decision`, add the
-`needs-decision` label, comment `@lukeocodes`, and end the turn. The
-maintainer decides and tells you separately.
-
-**Never:** merge, push to `main`, force-push, edit a PR you did not open,
-rewrite an ADR Decision, add a goal to `docs/goals.md`, open a second
-`daily` PR, or work outside the worktree.
+- Repo: lukeocodes/ask-anything
+- Queue: docs/goals.md (take from the top of its "Queue" list)
+- Design: docs/ ADRs (Decision sections are read-only; Known gaps lines may be removed when fixed and added when found, with the file)
+- Verify: `pnpm typecheck`, `pnpm test`, and `pnpm eval` if retrieval or answering changed
+- Also never: add a build step or linter (see "Working here")
