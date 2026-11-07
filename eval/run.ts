@@ -5,6 +5,11 @@
  *
  *   ASK_API_URL=http://localhost:3000 ASK_API_KEY=devkey123 pnpm eval
  *
+ * The default golden set is about this repository, so it needs no private
+ * data. Index it first and let the run finish:
+ *
+ *   ask sources add https://github.com/lukeocodes/ask-anything
+ *
  * Optional: pass a path to a .jsonl golden file as argv[2] (default eval/golden.jsonl).
  * Each line: { "question": "...", "expect": { "contains"?: string[], "url"?: string, "abstain"?: boolean } }
  */
