@@ -1,5 +1,5 @@
 import { logger } from "@ask/config";
-import { ask, emitEvent, listKnowledgeGaps } from "@ask/core";
+import { ask, emitEvent, gapAnsweredPayload, listKnowledgeGaps } from "@ask/core";
 
 const log = logger("gap-backfill");
 
@@ -10,9 +10,10 @@ const log = logger("gap-backfill");
  * and manual adds — so a gap recorded last week may be answerable today.
  *
  * This job re-asks each open gap. When one now returns a grounded answer, it
- * emits `question.answered`, which closes the gap (listKnowledgeGaps excludes
- * questions answered after they were last missed) and warms the cache for the
- * next asker. Gaps that still abstain stay open for the next run.
+ * emits `question.answered` with the gap's cluster id, which closes every
+ * older miss in that cluster (ADR-0022; text match covers unclustered gaps)
+ * and warms the cache for the next asker. Gaps that still abstain stay open
+ * for the next run.
  */
 export async function runGapBackfill(
   limit = 30,
@@ -32,7 +33,7 @@ export async function runGapBackfill(
         stillOpen++;
       } else {
         resolved++;
-        await emitEvent("question.answered", { question: gap.question, surface: "backfill" });
+        await emitEvent("question.answered", gapAnsweredPayload(gap, "backfill"));
       }
     } catch (err) {
       log.warn({ err, question: gap.question }, "gap re-ask failed");

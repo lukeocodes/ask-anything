@@ -33,11 +33,15 @@ export interface EventPayloads {
   "question.unanswered": {
     question: string;
     surface?: string;
+    /** The `question_events` row, so the ledger can find its cluster (ADR-0022). */
+    questionEventId?: string;
   };
   /** A previously-unanswered question can now be answered — the gap is closed. */
   "question.answered": {
     question: string;
     surface?: string;
+    /** The gap's `questions` cluster; closes every older miss in it (ADR-0022). */
+    questionId?: string;
   };
 }
 
@@ -131,41 +135,89 @@ export async function listRecentEvents(limit = 50): Promise<AskEvent[]> {
   return rows.map(toEvent);
 }
 
+export interface KnowledgeGap {
+  /** Most recent raw phrasing in the group. */
+  question: string;
+  /** Unanswered events in the group since it was last answered. */
+  count: number;
+  lastAskedAt: string;
+  /** The `questions` cluster, or null when the group fell back to text. */
+  questionId: string | null;
+}
+
+/** The `question.answered` payload that closes a gap (ADR-0022). */
+export function gapAnsweredPayload(
+  gap: Pick<KnowledgeGap, "question" | "questionId">,
+  surface: string,
+): EventPayloads["question.answered"] {
+  return gap.questionId
+    ? { question: gap.question, surface, questionId: gap.questionId }
+    : { question: gap.question, surface };
+}
+
+const UUID_RE = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
+
 /**
  * Top unanswered questions — a knowledge-gap ledger derived from the event log.
  * Grouping the raw abstain questions surfaces what people repeatedly ask that
  * the knowledgebase can't answer, so operators can fill real gaps (rather than the
  * bot fabricating). Surface-agnostic: any UI can render it.
+ *
+ * ADR-0022: an unanswered event groups by its `questions` cluster, found
+ * through `questionEventId` → `question_events.question_id` at read time.
+ * Events with no cluster yet (or a failed one, or written before the id was
+ * in the payload) group by a normalised-text key instead. A later
+ * `question.answered` closes an event when it names the event's cluster, or
+ * when its normalised text matches.
  */
-export async function listKnowledgeGaps(
-  limit = 20,
-): Promise<{ question: string; count: number; lastAskedAt: string }[]> {
-  // Unanswered and answered are matched on a normalised form — lower-cased,
-  // trimmed, trailing punctuation stripped — so "How do I stream?" closes
-  // "how do i stream". Grouping uses the same key; the most recent raw phrasing
-  // is the one shown (and re-asked by the backfill).
+export async function listKnowledgeGaps(limit = 20): Promise<KnowledgeGap[]> {
+  // Lower-cased, trimmed, trailing punctuation stripped, so "How do I stream?"
+  // matches "how do i stream".
   const norm = (col: ReturnType<typeof sql>) =>
     sql`lower(trim(regexp_replace(${col}, '[[:punct:][:space:]]+$', '')))`;
   const rows = (await db().execute(sql`
-    select (array_agg(payload->>'question' order by created_at desc))[1] as question,
-           count(*)::int as count,
-           max(created_at) as last_asked_at
-    from events u
-    where type = 'question.unanswered' and payload->>'question' is not null
-      and not exists (
+    with misses as (
+      select u.created_at,
+             u.payload->>'question' as question,
+             ${norm(sql`u.payload->>'question'`)} as nkey,
+             qe.question_id as qid
+      from events u
+      left join question_events qe
+        on qe.id = case when u.payload->>'questionEventId' ~ ${UUID_RE}
+                        then (u.payload->>'questionEventId')::uuid end
+      where u.type = 'question.unanswered' and u.payload->>'question' is not null
+    ),
+    open_misses as (
+      select m.* from misses m
+      where not exists (
         select 1 from events a
         where a.type = 'question.answered'
-          and ${norm(sql`a.payload->>'question'`)} = ${norm(sql`u.payload->>'question'`)}
-          and a.created_at > u.created_at
+          and a.created_at > m.created_at
+          and (
+            (m.qid is not null and a.payload->>'questionId' = m.qid::text)
+            or ${norm(sql`a.payload->>'question'`)} = m.nkey
+          )
       )
-    group by ${norm(sql`payload->>'question'`)}
+    )
+    select (array_agg(question order by created_at desc))[1] as question,
+           count(*)::int as count,
+           max(created_at) as last_asked_at,
+           (array_agg(qid::text))[1] as question_id
+    from open_misses
+    group by case when qid is not null then 'q:' || qid::text else 't:' || nkey end
     order by count desc, last_asked_at desc
     limit ${limit}
-  `)) as unknown as { question: string; count: number; last_asked_at: string | Date }[];
+  `)) as unknown as {
+    question: string;
+    count: number;
+    last_asked_at: string | Date;
+    question_id: string | null;
+  }[];
   return rows.map((r) => ({
     question: r.question,
     count: Number(r.count),
     lastAskedAt: new Date(r.last_asked_at).toISOString(),
+    questionId: r.question_id ?? null,
   }));
 }
 
