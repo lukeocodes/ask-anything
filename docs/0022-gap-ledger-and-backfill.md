@@ -46,8 +46,4 @@ the cache. Gaps that still abstain stay open.
 - Gaps close as the KB grows without anyone re-asking.
 - A gap only a private-tier caller could answer never closes.
 - Long-tail gaps beyond the top 30 by count are never re-asked.
-
-## Known gaps
-
-- Paraphrases are separate gaps. The ledger does not use the clustered
-  `questions` table.
+- A paraphrase shows as its own gap until clustering catches up with it.
