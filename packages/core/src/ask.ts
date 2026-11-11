@@ -326,7 +326,7 @@ async function finalize(a: FinalizeArgs): Promise<AskResult> {
   // (`refused`) is not a gap.
   const q = a.rawText.trim();
   if (a.abstained && !a.refused && !machine && q.length >= 12 && /[a-z]{3,}/i.test(q)) {
-    void emitEvent("question.unanswered", { question: q, surface: a.surface });
+    void emitEvent("question.unanswered", { question: q, surface: a.surface, questionEventId: a.questionEventId });
   }
 
   await recordUsage({
