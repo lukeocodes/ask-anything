@@ -12,7 +12,8 @@ const log = logger("gap-backfill");
  * This job re-asks each open gap. When one now returns a grounded answer, it
  * emits `question.answered` with the gap's cluster id, which closes every
  * older miss in that cluster (ADR-0022; text match covers unclustered gaps)
- * and warms the cache for the next asker. Gaps that still abstain stay open for the next run.
+ * and warms the cache for the next asker. Gaps that still abstain stay open
+ * for the next run.
  */
 export async function runGapBackfill(
   limit = 30,
