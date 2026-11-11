@@ -43,7 +43,7 @@ data model in `packages/db/README.md`, adding a source in
 | [0023](0023-usage-telemetry-on-every-step.md) | Usage telemetry on billable steps | Accepted |
 | [0024](0024-sources-are-registered-records.md) | Sources are registered records; repos are cloned with native git | Accepted |
 | [0025](0025-chunks-are-a-tree.md) | Chunks are a tree; structure lives in columns | Accepted |
-| [0026](0026-daily-autonomous-run.md) | A scheduled agent run works the goals queue, one PR at a time | Accepted |
+| [0026](0026-daily-autonomous-run.md) | A scheduled run moves the goals queue forward each day, within a deadline | Accepted |
 
 ## The rule
 
