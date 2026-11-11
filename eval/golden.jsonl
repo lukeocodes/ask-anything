@@ -1,3 +1,17 @@
 {"question": "What is this project and what does it do?", "expect": {"abstain": false}}
 {"question": "How do I install and run it locally?", "expect": {"abstain": false}}
 {"question": "What is the capital of France?", "expect": {"abstain": true}}
+{"question": "Which source adapters ship with ask-anything?", "expect": {"contains": ["git", "url"]}}
+{"question": "How does the git adapter clone a repository?", "expect": {"contains": ["--depth 1"]}}
+{"question": "Can the git adapter index a private repository?", "expect": {"contains": ["public"]}}
+{"question": "Where on disk does the git adapter keep its clones?", "expect": {"contains": ["ASK_WORKDIR"]}}
+{"question": "How does the git adapter list which files to index?", "expect": {"contains": ["git ls-files"]}}
+{"question": "What is the default maximum file size the git adapter will index?", "expect": {"contains": ["512"]}}
+{"question": "How do I index a whole website with the url adapter instead of a single page?", "expect": {"contains": ["sitemap"]}}
+{"question": "What is the default cap on the number of pages the url adapter indexes from a sitemap?", "expect": {"contains": ["500"]}}
+{"question": "What format does the url adapter convert HTML pages into?", "expect": {"contains": ["markdown"]}}
+{"question": "How does a source adapter get a secret such as a token?", "expect": {"contains": ["credentialEnv"]}}
+{"question": "How do I delete a source and also delete the records it produced?", "expect": {"contains": ["--purge"]}}
+{"question": "How do I force a source to re-index even when the commit has not changed?", "expect": {"contains": ["--force"]}}
+{"question": "Who won the 2018 FIFA World Cup?", "expect": {"abstain": true}}
+{"question": "What is the default port Redis listens on?", "expect": {"abstain": true}}
